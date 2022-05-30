@@ -94,14 +94,14 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         factuals["VAE_ENCODED"] = self.get_encodeings(factuals)
         # Get the counterfactuals
         # find counterfactuals
-        counter_factuals = factuals.progress_apply(
+        counter_factuals = factuals.apply(
             lambda x: self.tree_based_search(x), axis=1, raw=False
         )
         # counter_factuals = [self.tree_based_search(row) for __,row in factuals.iterrows()]
         # Concatenate the counterfactuals to a single dataframe
         # counter_factuals is a list of rows
         self.counter_factuals = counter_factuals
-        counter_factuals = check_counterfactuals(self._mlmodel, counter_factuals)
+        #counter_factuals = check_counterfactuals(self._mlmodel, counter_factuals)
         # Return the counterfactuals
         return counter_factuals[self._mlmodel.feature_input_order]
 
@@ -142,17 +142,18 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         target_values = nearest_neighbors[self._mlmodel.data.target]
         train_features = nearest_neighbors[self._mlmodel.feature_input_order]
         # Create the decision tree
-        clf = DecisionTreeClassifier(random_state=0)
-        #, max_depth=self.hyperparams["tree_params"]['grid_search']["max_depth"][0], 
-        #                            min_samples_split=self.hyperparams["tree_params"]['grid_search']["min_samples_split"][0], 
-        #                            min_samples_leaf=self.hyperparams["tree_params"]['grid_search']["min_samples_leaf"][0], 
-        #                            max_features=self.hyperparams["tree_params"]['grid_search']["max_features"][0])
+        clf = DecisionTreeClassifier(random_state=0 , max_depth=self.hyperparams["tree_params"]['grid_search']["max_depth"][0], 
+                                    min_samples_split=self.hyperparams["tree_params"]['grid_search']["min_samples_split"][0], 
+                                    min_samples_leaf=self.hyperparams["tree_params"]['grid_search']["min_samples_leaf"][0], 
+                                    max_features=self.hyperparams["tree_params"]['grid_search']["max_features"][0])
         # Define the grid search
-        grid_search = GridSearchCV(clf, self.hyperparams["tree_params"]["grid_search"], cv=5, verbose=0, refit=True, n_jobs=self.hyperparams["tree_params"]["grid_search_jobs"])
+        #grid_search = GridSearchCV(clf, self.hyperparams["tree_params"]["grid_search"], cv=5, verbose=0, refit=True, n_jobs=self.hyperparams["tree_params"]["grid_search_jobs"])
         # Fit the grid search evaluate on X_test and y_test then refit best model on the whole dataset
-        grid_search.fit(train_features, target_values)
+        #grid_search.fit(train_features, target_values)
         # Return the best model
-        return grid_search.best_estimator_
+        #return grid_search.best_estimator_
+        clf.fit(train_features, target_values)
+        return clf
 
 
     def tree_based_search(self, factual):
@@ -215,10 +216,10 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         # If len of leaf_nodes_with_label is 3, the max_search/5 on the nearest_leaf_node and max_search/3 on the second_nearest_node and max_search/2 on the third_nearest_node
         if len(leaf_nodes_with_label) == 1:
             max_searchs = [self.hyperparams["tree_params"]["max_search"]]
-        elif len(leaf_nodes_with_label) == 2:
+        else: #elif len(leaf_nodes_with_label) == 2:
             max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.7, self.hyperparams["tree_params"]["max_search"]*0.3]
-        else:
-            max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.5, self.hyperparams["tree_params"]["max_search"]*0.3, self.hyperparams["tree_params"]["max_search"]*0.2]
+        #else:
+        #    max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.5, self.hyperparams["tree_params"]["max_search"]*0.3, self.hyperparams["tree_params"]["max_search"]*0.2]
         # map max_search to int values while rounding up to the nearest int
         max_searchs = [int(round(x)) for x in max_searchs]
         # Loop over max_search
@@ -235,10 +236,18 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
                 elif number_searchs < max_search_i*0.6:
                     sigma = 10
                     gamma = 20
+                # if number_searchs is 80% of max_search
+                elif number_searchs < max_search_i*0.8:
+                    sigma = 1
+                    gamma = 10
+                # if number_searchs is 80% of max_search
+                elif number_searchs < max_search_i*0.9:
+                    sigma = 0.2
+                    gamma = 1
                 # if number_searchs is 90% of max_search
                 else:
                     sigma = 1
-                    gamma = 10
+                    gamma = 0
 
                 neighbor = nearest_leaf_node.generate_point(factual.copy(), data_catalog = self.data_catalog, sigma = sigma, gamma = gamma)
                 if counter_taregt == np.argmax(self.mlmodel.predict_proba(pd.DataFrame([neighbor[self.mlmodel.feature_input_order]]))):
