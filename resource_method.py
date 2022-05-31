@@ -24,14 +24,14 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
           "batch_size": 32,
       },
       "tree_params": {
-          "min_entries_per_label": 100,
+          "min_entries_per_label": 1000,
           "grid_search_jobs": -1,
           "min_weight_gini": 100, # set to 0.5 since here both class have same prob
-          "max_search": 100,
+          "max_search": 500,
           "grid_search": {
                 "splitter": ["best"],
                 "criterion": ["gini"],
-                "max_depth": [4,6],
+                "max_depth": [6],
                 "min_samples_split": [2],
                 "min_samples_leaf": [1],
                 "max_features": [None] #Note changing this will result in removing features that we might want to keep
