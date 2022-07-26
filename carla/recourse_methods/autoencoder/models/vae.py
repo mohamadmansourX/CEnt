@@ -170,7 +170,7 @@ class VariationalAutoencoder(nn.Module):
                     )
                 )
 
-            ELBO_train = ELBO[epoch, 0].round(2)
+            ELBO_train = ELBO[epoch, 0].round(3)
             log.info("[ELBO train: " + str(ELBO_train) + "]")
 
         self.save()
