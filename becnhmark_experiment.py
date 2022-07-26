@@ -1,4 +1,6 @@
 import os
+
+from carla.data.api import data
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import warnings
@@ -6,7 +8,9 @@ import warnings
 import pandas as pd
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
-
+warnings.filterwarnings("ignore")
+warnings.simplefilter(action='ignore', category=FutureWarning)
+import numpy as np
 import torch
 torch.cuda.is_available = lambda : False
 import yaml
@@ -33,12 +37,7 @@ from carla.recourse_methods import (
 from carla.recourse_methods.catalog.causal_recourse import constraints, samplers
 import carla.evaluation.catalog as evaluation_catalog
 from cote.TreeResource import TreeBasedContrastiveExplanation
-# Filter warnings
-import warnings
-warnings.filterwarnings("ignore")
-warnings.simplefilter(action='ignore', category=FutureWarning)
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from vae_benchmark import VAEBenchmark
 
 seed_my_session()
 def load_setup() -> Dict:
@@ -154,7 +153,7 @@ supported_backend_dict = {'pytorch': ["cchvae", "clue", "cruds", "dice", "face",
 # Hyperparameters tweaking (less important)
 
 
-FACTUAL_NUMBER = 2
+FACTUAL_NUMBER = 5
 
 data_names = ['adult','compas', 'give_me_some_credit', 'heloc']
 
@@ -164,60 +163,98 @@ recourse_methods = ['cote','clue','causal_recourse','dice','focus','cchvae','cru
 NOTWORKING = [] # ['causal_recourse','focus'] # NOTWORKING
 TESTEDSUCCESSFULLY = ['clue','dice','cote','cchvae'] # ALREADY TESTED
 
-recourse_methods = ['growing_spheres', 'cote']#, 'causal_recourse']
+recourse_methods = ['growing_spheres'] #, 'cote']#, 'causal_recourse']
 
-out_models = 'output/models/'
-out_csvs ='output/csvs/'
-
-# Create output directories
-if not os.path.exists(out_models):
-    os.makedirs(out_models)
-if not os.path.exists(out_csvs):
-    os.makedirs(out_csvs)
-
-test_checks = {'Resource_Method':[], 'Success_Boolean': [], 'data_name':[],'Details':[]}
-check_csv = 'output/checks.csv'
+# Define Output Directory
+OUT_DIR = "./outputs/"
+if not os.path.exists(OUT_DIR):
+    os.makedirs(OUT_DIR)
 
 print(recourse_methods)
+
 # Loop over datasets
 for data_name in data_names:
+
     print('Starting experiment for dataset {}'.format(data_name))
+
+    OUT_DIR_DATA = os.path.join(OUT_DIR, data_name)
+    if not os.path.exists(OUT_DIR_DATA):
+        os.makedirs(OUT_DIR_DATA)
+    
+    OUT_DIR_DATA_BENCH_CSVS = os.path.join(OUT_DIR_DATA, 'bench_csvs')
+    if not os.path.exists(OUT_DIR_DATA_BENCH_CSVS):
+        os.makedirs(OUT_DIR_DATA_BENCH_CSVS)
+    
     # Load dataset and necessary models
     data_models = DataModels(data_name = data_name,
                              factuals_length = FACTUAL_NUMBER,
-                             logging_file = os.path.join(out_models,data_name+'_models_logs.txt'))
+                             out_dir = OUT_DIR_DATA)
+    
+    # Load VAE
+    print("Starting VAE for benchmarking")
+    # Get an ann tensorflow model as temp just to get some hyperparams
+    temp_model = data_models.models_zoo['ann']['tensorflow']
+    if len(temp_model.feature_input_order) > 500:
+        layers = [len(temp_model.feature_input_order), 500, 250, 32]
+    elif len(temp_model.feature_input_order) > 100:
+        layers = [len(temp_model.feature_input_order), 100, 50, 32]
+    elif len(temp_model.feature_input_order) > 50:
+        layers = [len(temp_model.feature_input_order), 50, 25, 16]
+    else:
+        layers = [len(temp_model.feature_input_order), 25, 16, 8]
+    xxmutables = []
+    for i in range(len(temp_model.feature_input_order)):
+        xxmutables.append(True)
+    xxmutables = np.array(xxmutables)
+    vae_parms = {
+            "layers": layers,
+            "train": True,
+            "lambda_reg": 1e-6,
+            "kl_weight": 0.3,
+            "epochs": 25,
+            "lr": 1e-3,
+            "batch_size": 64,
+            "mutables": xxmutables
+        }
+    vae_bench = VAEBenchmark(temp_model, vae_parms)
+
+
     # Define a dict to store results
     metrics_scores = []
     # Define csv file to store results
-    csv_file = os.path.join(out_csvs, data_name+'_results.csv')
+    csv_file = os.path.join(OUT_DIR_DATA, 'benchmark_results.csv')
+
+    # Define Checkers
+    test_checks = {'Resource_Method':[], 'Success_Boolean': [], 'model_type':[],'Details':[]}
+    check_csv = os.path.join(OUT_DIR_DATA, 'checks.csv')
     # Loop over recourse methods
     for recourse_method in recourse_methods:
         print('----------------------------------------\nStarting experiment for recourse method {}\n\n'.format(recourse_method))
-        try:
-            if recourse_method in NOTWORKING:
-                print('Skipping {} as its in the NOTWORKING list'.format(recourse_method))
-                continue
-            # Check supported backend
-            supported_backend = get_resource_supported_backend(recourse_method, supported_backend_dict)
-            if supported_backend in ['tensorflow', 'pytorch']:
-                supported_types = ['linear', 'ann']
-            else:
-                supported_types = ['forest']
-            # Initialize resource method
-            # create model using first supported backend and supported type just to intialize the model
-            model_temp = data_models.models_zoo[supported_types[0]][supported_backend]
+        if recourse_method in NOTWORKING:
+            print('Skipping {} as its in the NOTWORKING list'.format(recourse_method))
+            continue
+        # Check supported backend
+        supported_backend = get_resource_supported_backend(recourse_method, supported_backend_dict)
+        if supported_backend in ['tensorflow', 'pytorch']:
+            supported_types = ['linear', 'ann']
+        else:
+            supported_types = ['forest']
+        
+        # Benchmark resource method
+        # Loop over supported types
+        for supported_type in supported_types:
+            try:
+                # Initialize resource method
+                # create model using first supported backend and supported type just to intialize the model
+                model_temp = data_models.models_zoo[supported_type][supported_backend]
 
-            if recourse_method in setup_catalog:
-                if 'hyperparams' in setup_catalog[recourse_method]:
-                    hyperpars = setup_catalog[recourse_method]['hyperparams']
-            else:
-                hyperpars = {}
+                if recourse_method in setup_catalog:
+                    if 'hyperparams' in setup_catalog[recourse_method]:
+                        hyperpars = setup_catalog[recourse_method]['hyperparams']
+                else:
+                    hyperpars = {}
 
-            rcmethod = intialialize_recourse_method(recourse_method, hyperpars, model_temp, data_models)
-            
-            # Benchmark resource method
-            # Loop over supported types
-            for supported_type in supported_types:
+                rcmethod = intialialize_recourse_method(recourse_method, hyperpars, model_temp, data_models)
                 # Load model
                 model = data_models.models_zoo[supported_type][supported_backend]
                 # Benchmark recourse method
@@ -230,10 +267,12 @@ for data_name in data_names:
                     evaluation_catalog.Redundancy(benchmark.mlmodel, {"cf_label": 1}),
                     evaluation_catalog.ConstraintViolation(benchmark.mlmodel),
                     evaluation_catalog.AvgTime({"time": benchmark.timer}),
+                    vae_bench
                 ]
                 # Run the benchmark and return the mean
                 resource_bench = benchmark.run_benchmark(measures = measures)
-                # resource_bench.to_csv('resource_bench_dataname_{}_method_{}.csv'.format(data_name, recourse_method))
+                bench_csv = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}.csv'.format(recourse_method, supported_backend, supported_type))
+                resource_bench.to_csv(bench_csv, index=False)
                 resource_bench = resource_bench.mean()
                 # Fill the model type and backend into the metrics_scores dict
                 resource_bench['model_type'] = supported_type
@@ -248,20 +287,20 @@ for data_name in data_names:
                 # Save method
                 test_checks['Resource_Method'].append(recourse_method)
                 test_checks['Success_Boolean'].append('success')
-                test_checks['data_name'].append(data_name)
+                test_checks['model_type'].append(supported_type)
                 test_checks['Details'].append('success')
                 # Load test checks to pandas dataframe
                 test_checks_df = pd.DataFrame(test_checks)
                 # Write to csv file
                 test_checks_df.to_csv(check_csv, index=False)
-        except Exception as e:
-            print('Exception for {}'.format(recourse_method))
-            print(e)
-            test_checks['Resource_Method'].append(recourse_method)
-            test_checks['Success_Boolean'].append('failed')
-            test_checks['Details'].append(str(e))
-            test_checks['data_name'].append(data_name)
-            # Load test checks to pandas dataframe
-            test_checks_df = pd.DataFrame(test_checks)
-            # Write to csv file
-            test_checks_df.to_csv(check_csv, index=False)
+            except Exception as e:
+                print('Exception for {}'.format(recourse_method))
+                print(e)
+                test_checks['Resource_Method'].append(recourse_method)
+                test_checks['Success_Boolean'].append('failed')
+                test_checks['Details'].append(str(e))
+                test_checks['model_type'].append(supported_type)
+                # Load test checks to pandas dataframe
+                test_checks_df = pd.DataFrame(test_checks)
+                # Write to csv file
+                test_checks_df.to_csv(check_csv, index=False)

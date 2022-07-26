@@ -1,0 +1,7 @@
+framework,model_type,accuracy
+tensorflow,ann,0.8444667431192661
+pytorch,ann,0.8432994757536042
+tensorflow,linear,0.8424393840104849
+pytorch,linear,0.8432175622542595
+xgboost,forest,0.80918250327654
+sklearn,forest,0.8008887614678899

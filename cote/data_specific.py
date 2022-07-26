@@ -1,3 +1,4 @@
+import os
 from carla import MLModelCatalog
 from carla.data.catalog import OnlineCatalog
 from carla.recourse_methods import GrowingSpheres
@@ -6,6 +7,8 @@ import contextlib
 from seed_env import seed_my_session
 from sklearn.metrics import accuracy_score
 import numpy as np
+import pandas as pd
+
 # Seed the environment
 seed_my_session()
 
@@ -27,7 +30,9 @@ class MyData:
     self.target = target
 
 class DataModels:
-  def __init__(self, data_name, factuals_length = 50, logging_file = 'models_logs.txt'):
+  def __init__(self, data_name, factuals_length = 50, out_dir = ''):
+    logging_file = os.path.join(out_dir, 'models_logs.txt')
+    self.models_metrics_file = os.path.join(out_dir, 'model_zoo_metrics.csv')
     self.data_name = data_name
     # Load dataset
     self.load_data_modesl(data_name=self.data_name, factuals_length = factuals_length)
@@ -73,14 +78,17 @@ class DataModels:
           
           # Save model
           self.models_zoo[model_type][framework] = model
-    with open(logging_file, 'a') as f:
-      f.write("\n")
-      f.write("Models loaded successfully!\n")
-      f.write("\n")
-      for model_type in self.models_zoo:
-        f.write("Model type: {}\n".format(model_type))
-        for framework in self.models_zoo[model_type]:
-          f.write("\tFramework: {}\taccuracy: {:.3f}\n".format(framework,score_acc(self.models_zoo[model_type][framework])))
+    # Save model metrics
+    frameworks = []
+    model_types = []
+    accuracies = []
+    for model_type in self.models_zoo:
+      for framework in self.models_zoo[model_type]:
+        frameworks.append(framework)
+        model_types.append(model_type)
+        accuracies.append(score_acc(self.models_zoo[model_type][framework]))
+    df = pd.DataFrame({"framework": frameworks, "model_type": model_types, "accuracy": accuracies})
+    df.to_csv(self.models_metrics_file , index=False)
         
   def get_data_features(self):
     # Check our data catalog
