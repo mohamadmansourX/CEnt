@@ -126,7 +126,7 @@ class VariationalAutoencoder(nn.Module):
             weight_decay=lambda_reg,
         )
 
-        criterion = nn.BCELoss(reduction="sum")
+        criterion = nn.MSELoss()  #BCELoss(reduction="sum")
 
         # Train the VAE with the new prior
         ELBO = np.zeros((epochs, 1))
@@ -148,8 +148,8 @@ class VariationalAutoencoder(nn.Module):
                 reconstruction, mu, log_var = self(data)
 
                 recon_loss = criterion(reconstruction, data)
-                kld_loss = self.kld(mu, log_var)
-                loss = recon_loss + beta * kld_loss
+                # kld_loss = self.kld(mu, log_var)
+                loss = recon_loss # + beta * kld_loss
 
                 # Update the parameters
                 optimizer.zero_grad()
