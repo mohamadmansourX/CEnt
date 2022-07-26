@@ -113,6 +113,9 @@ recourse_methods:
   focus:
     hyperparams:
       optimizer: "adam"
+  feature_tweak:
+    hyperparams:
+      optimizer: "adam"
   cote:
     hyperparams:
       optimizer: "adam"

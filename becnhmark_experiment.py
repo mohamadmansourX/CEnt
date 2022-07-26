@@ -104,11 +104,11 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
     elif "wachter" in method:
         return Wachter(mlmodel, hyperparams)
     elif "causal_recourse" in method:
-        hyperparams['constraint_handle'] = constraints.point_constraint
-        hyperparams["sampler_handle"]= samplers.sample_true_m0
         return CausalRecourse(mlmodel, hyperparams)
     elif "focus" in method:
         hyperparams = {'optimizer': 'adam', 'lr': 0.001, 'n_class': 2, 'n_iter': 1000, 'sigma': 1.0, 'temperature': 1.0, 'distance_weight': 0.01, 'distance_func': 'l1'}
+        return FOCUS(mlmodel, hyperparams)
+    elif "feature_tweak" in method:
         return FOCUS(mlmodel, hyperparams)
     elif "cote" in method:
         hpr = {"data_name": "data_name","n_search_samples": 300,"p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
@@ -157,13 +157,12 @@ FACTUAL_NUMBER = 5
 
 data_names = ['adult','compas', 'give_me_some_credit', 'heloc']
 
-recourse_methods = ['cote','clue','causal_recourse','dice','focus','cchvae','cruds','actionable_recourse',
+recourse_methods = ['cchvae','cruds','cote','clue','causal_recourse','dice','focus','actionable_recourse',
                     'cem','growing_spheres','revisewachter','face','feature_tweak']
 
 NOTWORKING = [] # ['causal_recourse','focus'] # NOTWORKING
 TESTEDSUCCESSFULLY = ['clue','dice','cote','cchvae'] # ALREADY TESTED
 
-recourse_methods = ['growing_spheres'] #, 'cote']#, 'causal_recourse']
 
 # Define Output Directory
 OUT_DIR = "./outputs/"

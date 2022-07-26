@@ -181,5 +181,5 @@ class MLModel(ABC):
         # make a mask
         mutable_mask = np.ones(len(self.feature_input_order), dtype=bool)
         # set the immutables to False
-        mutable_mask[immutable] = False
+        # @MM TODO turned off the mutable masks mutable_mask[immutable] = False
         return mutable_mask
