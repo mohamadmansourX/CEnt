@@ -1,6 +1,5 @@
 import os
 
-from carla.data.api import data
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import warnings
@@ -10,6 +9,7 @@ import pandas as pd
 warnings.simplefilter(action="ignore", category=FutureWarning)
 warnings.filterwarnings("ignore")
 warnings.simplefilter(action='ignore', category=FutureWarning)
+from carla.data.api import data
 import numpy as np
 import torch
 torch.cuda.is_available = lambda : False
