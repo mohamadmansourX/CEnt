@@ -1,3 +1,0 @@
-y-Nearest-Neighbours,L0_distance,L1_distance,L2_distance,Linf_distance,Success_Rate,Redundancy,Constraint_Violation,avg_time,VAE-Euclidean-Distance,model_type,backend,recourse_method
-,,,,,0.0,,,0.02070778679990326,,linear,tensorflow,growing_spheres
-,,,,,0.0,,,0.04049497740052175,,ann,tensorflow,growing_spheres
