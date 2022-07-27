@@ -35,10 +35,10 @@ class Benchmark:
 
         self.mlmodel = mlmodel
         self._recourse_method = recourse_method
-        self._factuals = self.mlmodel.get_ordered_features(factuals.copy())
+        self._factuals = self.mlmodel.get_ordered_features(factuals.copy()).astype(float)
 
         start = timeit.default_timer()
-        self._counterfactuals = recourse_method.get_counterfactuals(factuals)
+        self._counterfactuals = recourse_method.get_counterfactuals(factuals).astype(float)
         stop = timeit.default_timer()
         self.timer = stop - start
 

@@ -115,12 +115,12 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                 "binary_cat_features": True,
                 "vae_params": {
                     "layers": [len(mlmodel.feature_input_order), 20, 10, 7],"train": True,"lambda_reg": 1e-6,
-                    "epochs": 1,"lr": 1e-3,"batch_size": 64,},
+                    "epochs": 15,"lr": 1e-3,"batch_size": 64,},
                 "tree_params": {
                     "min_entries_per_label": int(data_models.trainData.df.shape[0]*0.04),
                     "grid_search_jobs": -1,
                     "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
-                    "max_search" : 9,
+                    "max_search" : 50,
                     "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7,8,9,10],
                                     "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],"max_features": [None] # Changing this --> removing features
                                     }
@@ -153,12 +153,13 @@ supported_backend_dict = {'pytorch': ["cchvae", "clue", "cruds", "dice", "face",
 # Hyperparameters tweaking (less important)
 
 
-FACTUAL_NUMBER = 5
+FACTUAL_NUMBER = 20
 
 data_names = ['adult','compas', 'give_me_some_credit', 'heloc']
 
-recourse_methods = ['cchvae','cruds','cote','clue','causal_recourse','dice','focus','actionable_recourse',
-                    'cem','growing_spheres','revisewachter','face','feature_tweak']
+recourse_methods = ['cote','dice','growing_spheres','clue','causal_recourse',
+                    'cchvae','cruds','focus','actionable_recourse',
+                    'cem','revisewachter','face','feature_tweak']
 
 NOTWORKING = [] # ['causal_recourse','focus'] # NOTWORKING
 TESTEDSUCCESSFULLY = ['clue','dice','cote','cchvae'] # ALREADY TESTED
@@ -210,7 +211,7 @@ for data_name in data_names:
             "train": True,
             "lambda_reg": 1e-6,
             "kl_weight": 0.3,
-            "epochs": 25,
+            "epochs": 15,
             "lr": 1e-3,
             "batch_size": 64,
             "mutables": xxmutables
@@ -303,3 +304,4 @@ for data_name in data_names:
                 test_checks_df = pd.DataFrame(test_checks)
                 # Write to csv file
                 test_checks_df.to_csv(check_csv, index=False)
+print("\n\nFINISHED BENCHMARKING!")
