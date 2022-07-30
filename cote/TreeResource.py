@@ -95,10 +95,21 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         # NNDescent
         self.data_indexes_m = self.dataset.index
         self.set_distance_metric_initialize_nn(self.distance_metric)
+
     def set_distance_metric_initialize_nn(self, distance_metric):
         self.distance_metric = distance_metric
         self.nnd = NNDescent(np.array(self.dataset["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
         self.nnd.prepare()
+
+    '''def set_distance_metric_initialize_nn(self, distance_metric):
+        self.distance_metric = distance_metric
+        self.nnd = NNDescent(np.array(self.dataset["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
+        self.nnd.prepare()
+        self.nnd_positive = NNDescent(np.array(self.dataset[self.dataset[self._mlmodel.data.target]==1]["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
+        self.nnd_positive.prepare()
+        self.nnd_negative = NNDescent(np.array(self.dataset[self.dataset[self._mlmodel.data.target]==0]["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
+        self.nnd_negative.prepare()'''
+
     def set_model(self,mlmodel):
         self._mlmodel = mlmodel
         self.mlmodel = mlmodel
@@ -228,41 +239,14 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         This method is responsible to get the counterfactual of a given targeted_encoding
         '''
         copy_data = self.dataset.copy()
-        ## Get distances from data to this encoding
-        #time1 = time.time()
-        #copy_data["distance"] = copy_data["VAE_ENCODED"].apply(lambda x: self.distance_get(x, factual["VAE_ENCODED"]))
-        #print("Old Method Took: {:.3f} seconds".format(time.time()-time1))
-        ### Use the KD tree to query the 1000 neighbors of data_indexes_1 from factual["VAE_ENCODED"]
-        ##TODO SHIFT TO pynndescent
-        #index_neighbors_1 = self.kdtree_1.query(factual["VAE_ENCODED"], k=self.hyperparams["tree_params"]["min_entries_per_label"])[1]
-        ### index_neighbors_1 are the locations of indexes in self.data_indexes_1
-        ### Use index_neighbors_1 to get the data_indexes_1
-        #datata_index_1 = self.data_indexes_1[index_neighbors_1].tolist()
-        #index_neighbors_0 = self.kdtree_0.query(factual["VAE_ENCODED"], k=self.hyperparams["tree_params"]["min_entries_per_label"])[1]
-        #datata_index_0 = self.data_indexes_0[index_neighbors_0].tolist()
-        ### combine the data_indexes_1 and data_indexes_0 lists
-        #datata_index_0.extend(datata_index_1)
-        ## Get the data from the indexes
-        # MAIN KDTREE
-        #index_neighbors_0 = self.kdtree_m.query(factual["VAE_ENCODED"], k=self.hyperparams["tree_params"]["min_entries_per_label"]*2.5)[1].tolist()
-        # NNDescent with manhatan
         index_neighbors_0 = self.nnd.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"]*2.5)[0][0].tolist()
         datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
-        nearest_neighbors = copy_data.loc[datata_index_0]
-        #datata_index_1 = np.random.choice(self.data_indexes_1, self.hyperparams["tree_params"]["min_entries_per_label"], replace=False).tolist()
-        #datata_index_0 = np.random.choice(self.data_indexes_0, self.hyperparams["tree_params"]["min_entries_per_label"], replace=False).tolist()
+        #index_neighbors_0 = self.nnd_negative.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
+        #datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
+        #index_neighbors_1 = self.nnd_positive.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
+        #datata_index_1 = self.data_indexes_m[index_neighbors_1].tolist()
         #datata_index_0.extend(datata_index_1)
-        #nearest_neighbors = copy_data.loc[datata_index_0]        
-        ## Sort the dataframe by distance
-        #time1 = time.time()
-        #copy_data = copy_data.sort_values(by="distance")
-        #print("Sort Took: {:.3f} seconds".format(time.time()-time1))
-        ## Reset the index
-        #copy_data = copy_data.reset_index(drop=True)
-        ## Get the nearest neighbors of the targeted encoding
-        #time1 = time.time()
-        #nearest_neighbors = self.get_nearest_neighbors_thershold(copy_data, label_threshold=self.hyperparams["tree_params"]["min_entries_per_label"])
-        #print("Get Neighbors Took: {:.3f} seconds".format(time.time()-time1))
+        nearest_neighbors = copy_data.loc[datata_index_0]
         # Get the tree
         tree = self.decision_tree(nearest_neighbors)
         self.mtree = tree
