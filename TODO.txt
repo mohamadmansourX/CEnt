@@ -1,0 +1,10 @@
+Good results mnist.
+
+Fix numerical accuracies.
+
+Change AE to VAE (samplings)
+
+Extend to NLP.
+
+Go over intro.
+

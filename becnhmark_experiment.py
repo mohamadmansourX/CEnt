@@ -200,8 +200,12 @@ for data_name in data_names:
         layers = [len(temp_model.feature_input_order), 100, 50, 32]
     elif len(temp_model.feature_input_order) > 50:
         layers = [len(temp_model.feature_input_order), 50, 25, 16]
-    else:
+    elif len(temp_model.feature_input_order) > 20:
+        layers = [len(temp_model.feature_input_order), 25, 16, 10]
+    elif len(temp_model.feature_input_order) > 10:
         layers = [len(temp_model.feature_input_order), 25, 16, 8]
+    else:
+        layers = [len(temp_model.feature_input_order), 25, 16, 6]
     xxmutables = []
     for i in range(len(temp_model.feature_input_order)):
         xxmutables.append(True)
