@@ -8,7 +8,6 @@ import pandas as pd
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 warnings.filterwarnings("ignore")
-warnings.simplefilter(action='ignore', category=FutureWarning)
 from carla.data.api import data
 import numpy as np
 import torch

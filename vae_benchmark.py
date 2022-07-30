@@ -75,6 +75,11 @@ class VAEBenchmark(Evaluation):
             counterfactuals_without_nans
         ).to_numpy()
 
-        vae_distances = self.get_distances(arr_f, arr_cf)
+        # Get the VAE encodings for the factuals and counterfactuals
+        vae_encodings_f = self.vae.encode(arr_f)
+        vae_encodings_cf = self.vae.encode(arr_cf)
+
+        # Get the VAE distances between the factuals and counterfactuals
+        vae_distances = self.get_distances(vae_encodings_f, vae_encodings_cf)
         
         return pd.DataFrame(vae_distances, columns=self.columns)
