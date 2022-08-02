@@ -7,7 +7,7 @@ from carla.recourse_methods.processing import merge_default_parameters
 from carla.evaluation import remove_nans
 import numpy as np
 import pandas as pd
-
+import torch
 
 class VAEBenchmark(Evaluation):
     """
@@ -76,8 +76,11 @@ class VAEBenchmark(Evaluation):
         ).to_numpy()
 
         # Get the VAE encodings for the factuals and counterfactuals
-        vae_encodings_f = self.vae.encode(arr_f)
-        vae_encodings_cf = self.vae.encode(arr_cf)
+        arr_f = torch.FloatTensor(arr_f)
+        arr_cf = torch.FloatTensor(arr_cf)
+
+        vae_encodings_f = self.vae.encode(arr_f)[0].detach().numpy()
+        vae_encodings_cf = self.vae.encode(arr_cf)[0].detach().numpy()
 
         # Get the VAE distances between the factuals and counterfactuals
         vae_distances = self.get_distances(vae_encodings_f, vae_encodings_cf)

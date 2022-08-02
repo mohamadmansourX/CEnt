@@ -63,7 +63,6 @@ def get_resource_supported_backend(recourse_method, supported_backend_dict):
         suuported_backs.remove("sklearn")
     #TODO: Keep both, but temp return only first
     return suuported_backs[0]
-    return suuported_backs
 
 def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
     # TODO restrict data to training only
@@ -114,12 +113,12 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                 "binary_cat_features": True,
                 "vae_params": {
                     "layers": [len(mlmodel.feature_input_order), 20, 10, 7],"train": True,"lambda_reg": 1e-6,
-                    "epochs": 15,"lr": 1e-3,"batch_size": 64,},
+                    "epochs": 1,"lr": 1e-3,"batch_size": 64,},
                 "tree_params": {
                     "min_entries_per_label": int(data_models.trainData.df.shape[0]*0.04),
                     "grid_search_jobs": -1,
                     "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
-                    "max_search" : 50,
+                    "max_search" : 5,
                     "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7,8,9,10],
                                     "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],"max_features": [None] # Changing this --> removing features
                                     }
@@ -147,6 +146,11 @@ supported_backend_dict = {'pytorch': ["cchvae", "clue", "cruds", "dice", "face",
 # VAE according to data columns
 
 
+# VAE constraint
+# VAE encodings distance in benchmarking
+# VAE 
+
+
 # MNIST last edits
 
 # Hyperparameters tweaking (less important)
@@ -162,6 +166,11 @@ recourse_methods = ['cote','dice','growing_spheres','clue','causal_recourse',
 
 NOTWORKING = [] # ['causal_recourse','focus'] # NOTWORKING
 TESTEDSUCCESSFULLY = ['clue','dice','cote','cchvae'] # ALREADY TESTED
+
+
+data_names = ['adult','heloc']
+
+recourse_methods = ['cote','dice','growing_spheres']
 
 
 # Define Output Directory
@@ -214,7 +223,7 @@ for data_name in data_names:
             "train": True,
             "lambda_reg": 1e-6,
             "kl_weight": 0.3,
-            "epochs": 15,
+            "epochs": 1,
             "lr": 1e-3,
             "batch_size": 64,
             "mutables": xxmutables
@@ -246,7 +255,7 @@ for data_name in data_names:
         # Benchmark resource method
         # Loop over supported types
         for supported_type in supported_types:
-            try:
+            if True:
                 # Initialize resource method
                 # create model using first supported backend and supported type just to intialize the model
                 model_temp = data_models.models_zoo[supported_type][supported_backend]
@@ -296,7 +305,7 @@ for data_name in data_names:
                 test_checks_df = pd.DataFrame(test_checks)
                 # Write to csv file
                 test_checks_df.to_csv(check_csv, index=False)
-            except Exception as e:
+            else: #except Exception as e:
                 print('Exception for {}'.format(recourse_method))
                 print(e)
                 test_checks['Resource_Method'].append(recourse_method)

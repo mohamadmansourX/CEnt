@@ -97,18 +97,14 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         self.set_distance_metric_initialize_nn(self.distance_metric)
 
     def set_distance_metric_initialize_nn(self, distance_metric):
-        self.distance_metric = distance_metric
-        self.nnd = NNDescent(np.array(self.dataset["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
-        self.nnd.prepare()
-
-    '''def set_distance_metric_initialize_nn(self, distance_metric):
+        # TODO : Need to make NNDescent per target class
         self.distance_metric = distance_metric
         self.nnd = NNDescent(np.array(self.dataset["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
         self.nnd.prepare()
         self.nnd_positive = NNDescent(np.array(self.dataset[self.dataset[self._mlmodel.data.target]==1]["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
         self.nnd_positive.prepare()
         self.nnd_negative = NNDescent(np.array(self.dataset[self.dataset[self._mlmodel.data.target]==0]["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
-        self.nnd_negative.prepare()'''
+        self.nnd_negative.prepare()
 
     def set_model(self,mlmodel):
         self._mlmodel = mlmodel
@@ -225,12 +221,6 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
                                     min_samples_split=self.hyperparams["tree_params"]['grid_search']["min_samples_split"], 
                                     min_samples_leaf=self.hyperparams["tree_params"]['grid_search']["min_samples_leaf"], 
                                     max_features=self.hyperparams["tree_params"]['grid_search']["max_features"])
-        # Define the grid search
-        #grid_search = GridSearchCV(clf, self.hyperparams["tree_params"]["grid_search"], cv=5, verbose=0, refit=True, n_jobs=self.hyperparams["tree_params"]["grid_search_jobs"])
-        # Fit the grid search evaluate on X_test and y_test then refit best model on the whole dataset
-        #grid_search.fit(train_features, target_values)
-        # Return the best model
-        #return grid_search.best_estimator_
         clf.fit(train_features, target_values)
         return clf
 
@@ -239,13 +229,13 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         This method is responsible to get the counterfactual of a given targeted_encoding
         '''
         copy_data = self.dataset.copy()
-        index_neighbors_0 = self.nnd.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"]*2.5)[0][0].tolist()
-        datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
-        #index_neighbors_0 = self.nnd_negative.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
+        #index_neighbors_0 = self.nnd.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"]*2.5)[0][0].tolist()
         #datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
-        #index_neighbors_1 = self.nnd_positive.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
-        #datata_index_1 = self.data_indexes_m[index_neighbors_1].tolist()
-        #datata_index_0.extend(datata_index_1)
+        index_neighbors_0 = self.nnd_negative.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
+        datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
+        index_neighbors_1 = self.nnd_positive.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
+        datata_index_1 = self.data_indexes_m[index_neighbors_1].tolist()
+        datata_index_0.extend(datata_index_1)
         nearest_neighbors = copy_data.loc[datata_index_0]
         # Get the tree
         tree = self.decision_tree(nearest_neighbors)
