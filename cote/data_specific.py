@@ -25,9 +25,10 @@ def score_acc(model):
     return accuracy
 
 class MyData:
-  def __init__(self, data, target):
+  def __init__(self, data, target, immutables):
     self.df = data
     self.target = target
+    self.immutables = immutables
 
 class DataModels:
   def __init__(self, data_name, factuals_length = 50, out_dir = ''):
@@ -45,8 +46,10 @@ class DataModels:
   def load_data_modesl(self, data_name="adult", factuals_length = 50):
     self.dataset = OnlineCatalog(data_name)
     # Prepare Training and Test Data
-    self.data_train, self.data_test = train_test_split(self.dataset.df, test_size=0.2)
-    self.trainData = MyData(self.data_train.copy(), self.dataset.target)
+    # test_size is the percentages of factuals to be used for testing
+    factuals_length_percentage = factuals_length/self.dataset.df.shape[0] * 3
+    self.data_train, self.data_test = train_test_split(self.dataset.df, test_size=factuals_length_percentage)
+    self.trainData = MyData(self.data_train.copy(), self.dataset.target, self.dataset.immutables)
 
     # load artificial neural network from catalog
     self.factuals = self.data_test.sample(factuals_length)

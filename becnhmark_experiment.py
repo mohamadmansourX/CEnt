@@ -128,9 +128,9 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                 "binary_cat_features": True,
                 "myvae_params": {
                     'input_dim': len(mlmodel.feature_input_order),
-                    'kld_weight': 0.0025,
-                    'layers': [20, 10],
-                    'latent_dim': 7,
+                    'kld_weight': 0.00025,
+                    'layers': layers,
+                    'latent_dim': latent_dim,
                     'hidden_activation': 'relu',
                     'dropout': 0.2,
                     'batch_norm': True,
@@ -147,9 +147,10 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     "min_entries_per_label": min_entries_per_label,
                     "grid_search_jobs": -1,
                     "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
-                    "max_search" : 5,
+                    "max_search" : 40,
                     "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7,8,9,10],
-                                    "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],"max_features": [None] # Changing this --> removing features
+                                    "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
+                                    "max_features": ['sqrt', 'log2',0.4, 0.6],
                                     }
                 }
           }

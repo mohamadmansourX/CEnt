@@ -28,7 +28,6 @@ from carla.recourse_methods import GrowingSpheres
 from sklearn.model_selection import GridSearchCV, train_test_split
 tqdm.pandas()
 
-
 class TreeBasedContrastiveExplanation(RecourseMethod):
     '''
     Decision Tree Based contrastive explanations
@@ -88,15 +87,22 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         # Construct the VAE
         # self.vae = TEMP_VAE
         self.vae = self.load_vae(dataset, self.hyperparams["myvae_params"], mlmodel, mlmodel.data.name)
+        # Define feature_input
+        self.feature_input_order = []
+        for fin in self.mlmodel.feature_input_order:
+            if fin in dataset.immutables:
+                continue
+            else:
+                self.feature_input_order.append(fin)
         # Construct the dataframe with encodings
         self.dataset = dataset.df
         self.dataset['VAE_ENCODED'] = self.get_encodeings(self.dataset.copy())
-        # Load Grid Parameters
-        self.hyperparams["tree_params"]["grid_search"] = self.optimize_grid(self.hyperparams["tree_params"]["grid_search"], self.dataset)
         ## These are added to optimize neighbor sampling for DT which used to take ~0.4 seconds and now will be 
         # NNDescent
         self.data_indexes_m = self.dataset.index
         self.set_distance_metric_initialize_nn(self.distance_metric)
+        # Load Grid Parameters
+        self.hyperparams["tree_params"]["grid_search"] = self.optimize_grid(self.hyperparams["tree_params"]["grid_search"], self.dataset)
         self.tree_scores = {'Train':[], 'Test':[]}
 
     def set_distance_metric_initialize_nn(self, distance_metric):
@@ -118,16 +124,35 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         #@TODO: make it on chunkc of the dataframe and return the top
         #@TODO: the chunkcs in order of encodings
         """
-        # Define Decision Tree Classifier
-        dec_tree = DecisionTreeClassifier(random_state=0)
-        # Define Grid Search
-        grid_search = GridSearchCV(dec_tree, grid_search, cv=5, n_jobs=self.hyperparams["tree_params"]["grid_search_jobs"])
-        target_values = df[self._mlmodel.data.target]
-        train_features = df[self._mlmodel.feature_input_order]
-        # Fit the Grid Search
-        grid_search.fit(train_features, target_values)
+        copy_data = df.copy()
+        # create a frequency count to count how many times a parameter was selected as best_params
+        best_params_list = []
+        for i in range(10):
+            factual = copy_data.sample(1).loc[0]
+            #index_neighbors_0 = self.nnd.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"]*2.5)[0][0].tolist()
+            #datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
+            index_neighbors_0 = self.nnd_negative.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
+            datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
+            index_neighbors_1 = self.nnd_positive.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
+            datata_index_1 = self.data_indexes_m[index_neighbors_1].tolist()
+            datata_index_0.extend(datata_index_1)
+            nearest_neighbors = copy_data.loc[datata_index_0]
+            # Define Decision Tree Classifier
+            dec_tree = DecisionTreeClassifier(random_state=0)
+            # Define Grid Search
+            grid_search = GridSearchCV(dec_tree, grid_search, cv=2, n_jobs=self.hyperparams["tree_params"]["grid_search_jobs"])
+            target_values = nearest_neighbors[self._mlmodel.data.target]
+            train_features = nearest_neighbors[self.feature_input_order]
+            # Fit the Grid Search
+            grid_search.fit(train_features, target_values)
+            best_params_list.append(grid_search.best_params_)
+        # For each key check the most common value and return that or just return random value
+        best_params = {}
+        best_params_listt = pd.DataFrame(best_params_list)
+        for key in grid_search.best_params_:
+            best_params[key] = best_params_listt[key].value_counts().index[0]
         # Return the best parameters as the format of grid_search
-        print(grid_search.best_params_)
+        print(best_params)
         return grid_search.best_params_
 
     def load_vae(
@@ -213,7 +238,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         using the nearest neighbors of the 100th instance of each class
         '''
         target_values = nearest_neighbors[self._mlmodel.data.target]
-        training_features = nearest_neighbors[self._mlmodel.feature_input_order]
+        training_features = nearest_neighbors[self.feature_input_order]
         # Split the data into train and test
         train_features, test_features, target_values_train, target_values_test = train_test_split(training_features, target_values, 
                                                                                                 test_size=0.1, random_state=42)
@@ -248,7 +273,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         tree = self.decision_tree(nearest_neighbors)
         self.mtree = tree
         # Get the leaf nodes
-        leaf_nodes = TreeLeafs(tree.tree_, self._mlmodel.feature_input_order).leafs_nodes.copy()
+        leaf_nodes = TreeLeafs(tree.tree_, self.feature_input_order).leafs_nodes.copy()
         # leaf_nodes is list of classes LeafNode
         # Get the leaf node where the targeted encoding is located
         leaf_node_n_i = -1
