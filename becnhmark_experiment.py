@@ -121,7 +121,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
     elif "feature_tweak" in method:
         return FOCUS(mlmodel, hyperparams)
     elif "cote" in method:
-        min_entries_per_label = int(data_models.trainData.df.shape[0]*0.01)
+        min_entries_per_label = int(data_models.trainData.df.shape[0]*0.02)
         if min_entries_per_label<900:
             min_entries_per_label = 900
         hpr = {"data_name": "data_name","n_search_samples": 300,"p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
@@ -135,7 +135,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     'dropout': 0.2,
                     'batch_norm': True,
                     'batch_size': 32,
-                    'epochs': 20,
+                    'epochs': 10,
                     'learning_rate': 0.001,
                     'weight_decay': 0.0,
                     'cuda': False,
@@ -147,10 +147,10 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     "min_entries_per_label": min_entries_per_label,
                     "grid_search_jobs": -1,
                     "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
-                    "max_search" : 40,
+                    "max_search" : 100,
                     "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7,8,9,10],
                                     "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
-                                    "max_features": ['sqrt', 'log2',0.4, 0.6],
+                                    "max_features": [0.4, 0.6, 0.8],
                                     }
                 }
           }
@@ -249,7 +249,7 @@ for data_name in data_names:
         layers = [25, 16]
         latent_dim = 12
     elif len(temp_model.feature_input_order) > 10:
-        layers = [16]
+        layers = [25]
         latent_dim = 8
     else:
         layers = [16]
@@ -305,7 +305,7 @@ for data_name in data_names:
         # Benchmark resource method
         # Loop over supported types
         for supported_type in supported_types:
-            if True:
+            try:
                 # Initialize resource method
                 # create model using first supported backend and supported type just to intialize the model
                 model_temp = data_models.models_zoo[supported_type][supported_backend]
@@ -362,7 +362,7 @@ for data_name in data_names:
                 test_checks_df = pd.DataFrame(test_checks)
                 # Write to csv file
                 test_checks_df.to_csv(check_csv, index=False)
-            else: #except Exception as e:
+            except Exception as e:
                 print('Exception for {}'.format(recourse_method))
                 print(e)
                 test_checks['Resource_Method'].append(recourse_method)

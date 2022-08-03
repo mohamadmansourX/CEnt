@@ -125,10 +125,12 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         #@TODO: the chunkcs in order of encodings
         """
         copy_data = df.copy()
+        print("DT Warming Up...")
         # create a frequency count to count how many times a parameter was selected as best_params
         best_params_list = []
-        for i in range(10):
-            factual = copy_data.sample(1).loc[0]
+        for i in range(5):
+            index_factual = df.sample(1).index[0]
+            factual = df.loc[index_factual]
             #index_neighbors_0 = self.nnd.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"]*2.5)[0][0].tolist()
             #datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
             index_neighbors_0 = self.nnd_negative.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
@@ -140,20 +142,20 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
             # Define Decision Tree Classifier
             dec_tree = DecisionTreeClassifier(random_state=0)
             # Define Grid Search
-            grid_search = GridSearchCV(dec_tree, grid_search, cv=2, n_jobs=self.hyperparams["tree_params"]["grid_search_jobs"])
+            grid_tree = GridSearchCV(dec_tree, grid_search, cv=2, n_jobs=self.hyperparams["tree_params"]["grid_search_jobs"])
             target_values = nearest_neighbors[self._mlmodel.data.target]
             train_features = nearest_neighbors[self.feature_input_order]
             # Fit the Grid Search
-            grid_search.fit(train_features, target_values)
-            best_params_list.append(grid_search.best_params_)
+            grid_tree.fit(train_features, target_values)
+            best_params_list.append(grid_tree.best_params_)
         # For each key check the most common value and return that or just return random value
         best_params = {}
         best_params_listt = pd.DataFrame(best_params_list)
-        for key in grid_search.best_params_:
+        for key in grid_tree.best_params_:
             best_params[key] = best_params_listt[key].value_counts().index[0]
-        # Return the best parameters as the format of grid_search
+        # Return the best parameters
         print(best_params)
-        return grid_search.best_params_
+        return best_params
 
     def load_vae(
         self, data: pd.DataFrame, vae_params: Dict, mlmodel: MLModel, data_name: str
