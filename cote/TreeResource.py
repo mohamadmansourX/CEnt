@@ -20,6 +20,7 @@ from cote.TreeLeaf import TreeLeafs
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import tree
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 import torch
 import numpy as np
 from carla import Benchmark
@@ -95,6 +96,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         # NNDescent
         self.data_indexes_m = self.dataset.index
         self.set_distance_metric_initialize_nn(self.distance_metric)
+        self.tree_scores = {'Train':[], 'Test':[]}
 
     def set_distance_metric_initialize_nn(self, distance_metric):
         # TODO : Need to make NNDescent per target class
@@ -169,6 +171,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         factuals["VAE_ENCODED"] = self.get_encodeings(factuals)
         # Get the counterfactuals
         # find counterfactuals
+        self.tree_scores = {'Train':[], 'Test':[]}
         counter_factuals = factuals.apply(
             lambda x: self.tree_based_search(x), axis=1, raw=False
         )
@@ -215,13 +218,22 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         using the nearest neighbors of the 100th instance of each class
         '''
         target_values = nearest_neighbors[self._mlmodel.data.target]
-        train_features = nearest_neighbors[self._mlmodel.feature_input_order]
+        training_features = nearest_neighbors[self._mlmodel.feature_input_order]
+        # Split the data into train and test
+        train_features, test_features, target_values_train, target_values_test = train_test_split(training_features, target_values, 
+                                                                                                test_size=0.2, random_state=42)
         # Create the decision tree
         clf = DecisionTreeClassifier(random_state=0 , max_depth=self.hyperparams["tree_params"]['grid_search']["max_depth"], 
                                     min_samples_split=self.hyperparams["tree_params"]['grid_search']["min_samples_split"], 
                                     min_samples_leaf=self.hyperparams["tree_params"]['grid_search']["min_samples_leaf"], 
                                     max_features=self.hyperparams["tree_params"]['grid_search']["max_features"])
-        clf.fit(train_features, target_values)
+        clf.fit(train_features, target_values_train)
+        # Predict the test data
+        predicted__test_values = clf.predict(test_features)
+        predicted__train_values = clf.predict(train_features)
+        # Calculate the accuracy
+        self.tree_accuracy_test['Train'].append(accuracy_score(target_values_train, predicted__train_values))
+        self.tree_accuracy_test['Test'].append(accuracy_score(target_values_test, predicted__test_values))
         return clf
 
     def tree_based_search(self, factual):

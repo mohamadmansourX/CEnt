@@ -140,20 +140,19 @@ supported_backend_dict = {'pytorch': ["cchvae", "clue", "cruds", "dice", "face",
                         'xgboost': ['feature_tweak','focus']}
 
 
-# VAE distance in benchmarking
-# Github migration
-# clue, dice, face, growing_spheres, [focus, cem,] crude, wama tayasar
-# VAE according to data columns
-
-
+# VAE distance in benchmarking                                                  DONE
+# Github migration                                                              DONE
+# clue, dice, face, growing_spheres, [focus, cem,] crude, wama tayasar          ~DONE
+# VAE latent representation layer size according to data columns                ~DONE
 # VAE constraint
-# VAE encodings distance in benchmarking
-# VAE 
+# VAE encodings distance in benchmarking                                        DONE
+# Implement our working version of VAE (tested on MNIST with 2 neurons)         DONE
+# Save Benchmark results per row, factuals, counterfactuals                     DONE
+# Save Tree results per row (Some time is added for inf)                        DONE
+#       For (3124, 15) nearest neighbors, we have the following timings: 
+#               1. DTree fitting per row: 11.6 ms ± 1.72 ms per run
+#               2. Scoring (Inference+Score): 3.9 ms ± 126 µs per run
 
-
-# MNIST last edits
-
-# Hyperparameters tweaking (less important)
 
 
 FACTUAL_NUMBER = 20
@@ -289,6 +288,9 @@ for data_name in data_names:
                 benchmark._factuals.to_csv(bench_csv_factuals, index=False)
                 benchmark._counterfactuals.to_csv(bench_csv_counterfactuals, index=False)
                 resource_bench.to_csv(bench_csv, index=False)
+                if recourse_method == 'cote':
+                    bench_csv_tree_scores = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}_DTScores.csv'.format(recourse_method, supported_backend, supported_type))
+                    pd.DataFrame(rcmethod.tree_scores).to_csv(bench_csv_tree_scores, index=False)
                 resource_bench = resource_bench.mean()
                 # Fill the model type and backend into the metrics_scores dict
                 resource_bench['model_type'] = supported_type
