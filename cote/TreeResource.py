@@ -6,15 +6,8 @@ import pandas as pd
 from carla import RecourseMethod
 from carla.data.api import data, Data
 from carla.models.api import MLModel
-from carla.recourse_methods.autoencoder import (
-    VariationalAutoencoder,
-    train_variational_autoencoder,
-)
-from carla.recourse_methods.processing import (
-    check_counterfactuals,
-    merge_default_parameters,
-    reconstruct_encoding_constraints,
-)
+from cote.vae import VariationalAutoencoder
+from carla.recourse_methods.processing import merge_default_parameters
 from cote.TreeLeaf import TreeLeafs
 # For Descision Tree implementation
 from sklearn.tree import DecisionTreeClassifier
@@ -49,14 +42,22 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
       "clamp": True,
       "target_class": [0, 1],
       "binary_cat_features": True,
-      "vae_params": {
-          "layers": [50, 10],
-          "train": True,
-          "lambda_reg": 1e-6,
-          "kl_weight": 0.3,
-          "epochs": 5,
-          "lr": 1e-3,
-          "batch_size": 32,
+      "myvae_params": {
+          'input_dim': 784,
+          'kld_weight': 0.0025,
+          'layers': [512, 128],
+          'latent_dim': 32,
+          'hidden_activation': 'relu',
+          'dropout': 0.2,
+          'batch_norm': True,
+          'batch_size': 64,
+          'epochs': 20,
+          'learning_rate': 0.001,
+          'weight_decay': 0.0,
+          'cuda': False,
+          'verbose': True,
+          'train': True,
+          'save_dir': './vae_model/',
       },
       "tree_params": {
           "min_entries_per_label": 1000,
@@ -86,7 +87,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         self.hyperparams = merge_default_parameters(hyperparams, self._DEFAULT_HYPERPARAMS)
         # Construct the VAE
         # self.vae = TEMP_VAE
-        self.vae = self.load_vae(dataset, self.hyperparams["vae_params"], mlmodel, mlmodel.data.name)
+        self.vae = self.load_vae(dataset, self.hyperparams["myvae_params"], mlmodel, mlmodel.data.name)
         # Construct the dataframe with encodings
         self.dataset = dataset.df
         self.dataset['VAE_ENCODED'] = self.get_encodeings(self.dataset.copy())
@@ -139,17 +140,11 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         # Change all False to True in mutable_list
         mutable_list = np.array([True for x in mutable_list])
         generative_model = VariationalAutoencoder(
-            data_name, vae_params["layers"], mutable_list
+            data_name, vae_params["layers"], mutable_list, self.hyperparams['myvae_params']
         )
-        print(generative_model)
         if vae_params["train"]:
             generative_model.fit(
-                xtrain=data.df[mlmodel.feature_input_order],
-                kl_weight=vae_params["kl_weight"],
-                lambda_reg=vae_params["lambda_reg"],
-                epochs=vae_params["epochs"],
-                lr=vae_params["lr"],
-                batch_size=vae_params["batch_size"],
+                xtrain=data.df[mlmodel.feature_input_order]
             )
         else:
             try:
@@ -221,7 +216,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         training_features = nearest_neighbors[self._mlmodel.feature_input_order]
         # Split the data into train and test
         train_features, test_features, target_values_train, target_values_test = train_test_split(training_features, target_values, 
-                                                                                                test_size=0.2, random_state=42)
+                                                                                                test_size=0.1, random_state=42)
         # Create the decision tree
         clf = DecisionTreeClassifier(random_state=0 , max_depth=self.hyperparams["tree_params"]['grid_search']["max_depth"], 
                                     min_samples_split=self.hyperparams["tree_params"]['grid_search']["min_samples_split"], 

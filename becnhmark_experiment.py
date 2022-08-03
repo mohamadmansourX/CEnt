@@ -111,9 +111,23 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
     elif "cote" in method:
         hpr = {"data_name": "data_name","n_search_samples": 300,"p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
                 "binary_cat_features": True,
-                "vae_params": {
-                    "layers": [len(mlmodel.feature_input_order), 20, 10, 7],"train": True,"lambda_reg": 1e-6,
-                    "epochs": 1,"lr": 1e-3,"batch_size": 64,},
+                "myvae_params": {
+                    'input_dim': len(mlmodel.feature_input_order),
+                    'kld_weight': 0.0025,
+                    'layers': [20, 10],
+                    'latent_dim': 7,
+                    'hidden_activation': 'relu',
+                    'dropout': 0.2,
+                    'batch_norm': True,
+                    'batch_size': 64,
+                    'epochs': 20,
+                    'learning_rate': 0.001,
+                    'weight_decay': 0.0,
+                    'cuda': False,
+                    'verbose': True,
+                    'train': True,
+                    'save_dir': './vae_model/',
+                },
                 "tree_params": {
                     "min_entries_per_label": int(data_models.trainData.df.shape[0]*0.04),
                     "grid_search_jobs": -1,
@@ -147,6 +161,7 @@ supported_backend_dict = {'pytorch': ["cchvae", "clue", "cruds", "dice", "face",
 # VAE constraint
 # VAE encodings distance in benchmarking                                        DONE
 # Implement our working version of VAE (tested on MNIST with 2 neurons)         DONE
+# Fix Best Metric in our version of VAE (load the best instead of using latest) DONE
 # Save Benchmark results per row, factuals, counterfactuals                     DONE
 # Save Tree results per row (Some time is added for inf)                        DONE
 #       For (3124, 15) nearest neighbors, we have the following timings: 
@@ -182,7 +197,9 @@ print(recourse_methods)
 # Loop over datasets
 for data_name in data_names:
 
+    print('######################################################################')
     print('Starting experiment for dataset {}'.format(data_name))
+    print('######################################################################\n')
 
     OUT_DIR_DATA = os.path.join(OUT_DIR, data_name)
     if not os.path.exists(OUT_DIR_DATA):
@@ -201,32 +218,48 @@ for data_name in data_names:
     print("Starting VAE for benchmarking")
     # Get an ann tensorflow model as temp just to get some hyperparams
     temp_model = data_models.models_zoo['ann']['tensorflow']
+    
     if len(temp_model.feature_input_order) > 500:
-        layers = [len(temp_model.feature_input_order), 500, 250, 32]
+        layers = [500, 250]
+        latent_dim = 32
     elif len(temp_model.feature_input_order) > 100:
-        layers = [len(temp_model.feature_input_order), 100, 50, 32]
+        layers = [100, 50]
+        latent_dim = 24
     elif len(temp_model.feature_input_order) > 50:
-        layers = [len(temp_model.feature_input_order), 50, 25, 16]
+        layers = [50, 25]
+        latent_dim = 16
     elif len(temp_model.feature_input_order) > 20:
-        layers = [len(temp_model.feature_input_order), 25, 16, 10]
+        layers = [25, 16]
+        latent_dim = 12
     elif len(temp_model.feature_input_order) > 10:
-        layers = [len(temp_model.feature_input_order), 25, 16, 8]
+        layers = [25, 16]
+        latent_dim = 8
     else:
-        layers = [len(temp_model.feature_input_order), 25, 16, 6]
+        layers = [25, 16]
+        latent_dim = 5
     xxmutables = []
     for i in range(len(temp_model.feature_input_order)):
         xxmutables.append(True)
     xxmutables = np.array(xxmutables)
-    vae_parms = {
-            "layers": layers,
-            "train": True,
-            "lambda_reg": 1e-6,
-            "kl_weight": 0.3,
-            "epochs": 1,
-            "lr": 1e-3,
-            "batch_size": 64,
-            "mutables": xxmutables
+    vae_parms = { 
+        "myvae_params": {
+            'input_dim': len(temp_model.feature_input_order),
+            'kld_weight': 0.00025,
+            'layers': layers,
+            'latent_dim': latent_dim,
+            'hidden_activation': 'relu',
+            'dropout': 0.2,
+            'batch_norm': True,
+            'batch_size': 64,
+            'epochs': 10,
+            'learning_rate': 0.001,
+            'weight_decay': 0.0,
+            'cuda': False,
+            'verbose': True,
+            'train': True,
+            'save_dir': './vae_model/',
         }
+    }
     vae_bench = VAEBenchmark(temp_model, vae_parms)
 
 

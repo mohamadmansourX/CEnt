@@ -1,10 +1,7 @@
-from carla.recourse_methods.autoencoder import (
-    VariationalAutoencoder,
-    train_variational_autoencoder,
-)
 from carla.evaluation.api import Evaluation
 from carla.recourse_methods.processing import merge_default_parameters
 from carla.evaluation import remove_nans
+from cote.vae import VariationalAutoencoder
 import numpy as np
 import pandas as pd
 import torch
@@ -14,34 +11,39 @@ class VAEBenchmark(Evaluation):
     Computes the euclidean distance between the latent spaces between the counterfactuals and factuals
     """
     _DEFAULT_HYPERPARAMS = {
-          "layers": [512, 250, 32],
-          "train": True,
-          "lambda_reg": 1e-6,
-          "kl_weight": 0.3,
-          "epochs": 15,
-          "lr": 1e-3,
-          "batch_size": 64,
-          "mutables": []
-      }
+        "myvae_params": {
+            'input_dim': None,
+            'kld_weight': 0.0025,
+            'layers': [20, 10],
+            'latent_dim': 7,
+            'hidden_activation': 'relu',
+            'dropout': 0.2,
+            'batch_norm': True,
+            'batch_size': 64,
+            'epochs': 20,
+            'learning_rate': 0.001,
+            'weight_decay': 0.0,
+            'cuda': False,
+            'verbose': True,
+            'train': True,
+            'save_dir': './vae_model/'
+        }
+    }
     def __init__(self, mlmodel, hyperparameters):
         hyperparameters = merge_default_parameters(hyperparameters, self._DEFAULT_HYPERPARAMS)
         super().__init__(mlmodel, hyperparameters)
+        hyperparameters['myvae_params']['input_dim'] = len(mlmodel.feature_input_order)
         self.columns = ["VAE-Euclidean-Distance"]
-        self._initialize_vae(vae_params = hyperparameters)
-    
+        self._initialize_vae(vae_params = hyperparameters['myvae_params'])
+
     def _initialize_vae(self, vae_params):
         data_name = self.mlmodel.data.name
+        mutable_list = self.mlmodel.get_mutable_mask() 
         self.vae = VariationalAutoencoder(
-            data_name, vae_params["layers"], vae_params["mutables"]
+            data_name, vae_params["layers"], mutable_list, vae_params
         )
 
-        self.vae.fit(xtrain=self.mlmodel.data.df[self.mlmodel.feature_input_order],
-                kl_weight=vae_params["kl_weight"],
-                lambda_reg=vae_params["lambda_reg"],
-                epochs=vae_params["epochs"],
-                lr=vae_params["lr"],
-                batch_size=vae_params["batch_size"],
-            )
+        self.vae.fit(xtrain=self.mlmodel.data.df[self.mlmodel.feature_input_order])
     
     def get_minkowski_distance(self, v1s, v2s, p = 2):
         '''

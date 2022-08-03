@@ -154,14 +154,12 @@ class VariationalAutoencoder(nn.Module):
                 steps = epoch * len(train_loader) + i
                 self.loss_list['Steps'].append(steps)
                 loss_epoch.append(loss_val)
-                # Print the loss
-                if self.params['verbose']:
-                    if i % 300 == 0 and i!=0:
-                        print('Epoch: {}, Batch: {}, Loss: {}'.format(epoch, i, loss_val))
+                
+            print('Epoch: {}, ELBO Loss: {}'.format(epoch, np.mean(loss_epoch)))
             if epoch == 0:
                 # Set best_loss to loss_epoch mean
                 best_loss = np.mean(loss_epoch)
-                print('Epoch: {}, Best Loss: {}'.format(epoch, best_loss))
+                print('Epoch: {}, Best ELBO Loss: {}'.format(epoch, best_loss))
                 best_checkpoint_path = os.path.join(self.params['save_dir'], '{}_epoch_best_model.pth'.format(epoch))
                 # Save the model to the epoch_best_model.pth
                 torch.save(self.state_dict(), best_checkpoint_path)
@@ -169,7 +167,7 @@ class VariationalAutoencoder(nn.Module):
                 # If loss_epoch mean is better than best_loss, set best_loss to loss_epoch mean
                 if np.mean(loss_epoch) < best_loss:
                     best_loss = np.mean(loss_epoch)
-                    print('BEST Epoch: {}, Best Loss: {}'.format(epoch, best_loss))
+                    print('BEST Epoch: {}, Best ELBO Loss: {}'.format(epoch, best_loss))
                     # Remove the previous best_checkpoint_path
                     os.remove(best_checkpoint_path)
                     # Save the model to the epoch_best_model.pth

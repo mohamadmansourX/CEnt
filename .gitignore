@@ -3,3 +3,4 @@ outputs/
 __pycache__/
 *.pyc
 data/
+vae_model/
