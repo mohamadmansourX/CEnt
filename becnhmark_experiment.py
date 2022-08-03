@@ -283,7 +283,11 @@ for data_name in data_names:
                 ]
                 # Run the benchmark and return the mean
                 resource_bench = benchmark.run_benchmark(measures = measures)
-                bench_csv = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}.csv'.format(recourse_method, supported_backend, supported_type))
+                bench_csv = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}_bench.csv'.format(recourse_method, supported_backend, supported_type))
+                bench_csv_factuals = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}_factuals.csv'.format(recourse_method, supported_backend, supported_type))
+                bench_csv_counterfactuals = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}_counterfactuals.csv'.format(recourse_method, supported_backend, supported_type))
+                benchmark._factuals.to_csv(bench_csv_factuals, index=False)
+                benchmark._counterfactuals.to_csv(bench_csv_counterfactuals, index=False)
                 resource_bench.to_csv(bench_csv, index=False)
                 resource_bench = resource_bench.mean()
                 # Fill the model type and backend into the metrics_scores dict
