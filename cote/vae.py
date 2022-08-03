@@ -80,7 +80,7 @@ class VariationalAutoencoder(nn.Module):
 
 
     # Define plot loss
-    def plot_loss(self):
+    def plot_loss(self, plot_flag = True, save_path = None):
         #self.loss_list = {'Steps':[],'Loss':[],
         #                  'Epoch_Loss':[],'Best_Epoch_Loss':[],
         #                  'Epochs':[]}
@@ -114,8 +114,12 @@ class VariationalAutoencoder(nn.Module):
         plt.title('Loss Vs Epochs')
         # Set the legend
         plt.legend()
-        # Show the plot
-        plt.show()
+        if plot_flag:
+            # Show the plot
+            plt.show()
+        else:
+            # Save plt to plt.png
+            plt.savefig(save_path)
     # Define training function
     def fit(self, xtrain: Union[pd.DataFrame, np.ndarray]
     ):

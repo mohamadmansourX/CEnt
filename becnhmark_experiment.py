@@ -44,6 +44,18 @@ def load_setup() -> Dict:
         setup_catalog = yaml.safe_load(f)
     return setup_catalog["recourse_methods"]
 
+def print_conf(conf, d=4, d_iter=5):
+    for k, v in conf.items():
+        if isinstance(v, dict):
+            print("{}{} : ".format(d * " ", str(k)))
+            print_conf(v, d + d_iter)
+        elif isinstance(v, list) and len(v) >= 1 and isinstance(v[0], dict):
+            print("{}{} : ".format(d * " ", str(k)))
+            for value in v:
+                print_conf(value, d + d_iter)
+        else:
+            print("{}{} : {}".format(d * " ", k, v))
+        
 def get_resource_supported_backend(recourse_method, supported_backend_dict):
     '''
     Search in supported_backend for the recourse_method to know what backend is supported
@@ -109,6 +121,9 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
     elif "feature_tweak" in method:
         return FOCUS(mlmodel, hyperparams)
     elif "cote" in method:
+        min_entries_per_label = int(data_models.trainData.df.shape[0]*0.01)
+        if min_entries_per_label<900:
+            min_entries_per_label = 900
         hpr = {"data_name": "data_name","n_search_samples": 300,"p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
                 "binary_cat_features": True,
                 "myvae_params": {
@@ -129,7 +144,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     'save_dir': './vae_model/',
                 },
                 "tree_params": {
-                    "min_entries_per_label": int(data_models.trainData.df.shape[0]*0.01),
+                    "min_entries_per_label": min_entries_per_label,
                     "grid_search_jobs": -1,
                     "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
                     "max_search" : 5,
@@ -138,6 +153,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                                     }
                 }
           }
+        print_conf(hpr)
         return TreeBasedContrastiveExplanation(data_models.trainData, mlmodel, hpr, data_catalog= data_models.new_catalog_n)
 
     else:
@@ -260,8 +276,9 @@ for data_name in data_names:
             'save_dir': './vae_model/',
         }
     }
+    print_conf(vae_parms)
     vae_bench = VAEBenchmark(temp_model, vae_parms)
-
+    vae_bench.vae.plot_loss(plot_flag = False, save_path = os.path.join(OUT_DIR_DATA, 'loss_plot.png'))
 
     # Define a dict to store results
     metrics_scores = []
