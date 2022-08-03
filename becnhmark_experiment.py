@@ -232,11 +232,11 @@ for data_name in data_names:
         layers = [25, 16]
         latent_dim = 12
     elif len(temp_model.feature_input_order) > 10:
-        layers = [25, 16]
+        layers = [16]
         latent_dim = 8
     else:
-        layers = [25, 16]
-        latent_dim = 5
+        layers = [16]
+        latent_dim = 7
     xxmutables = []
     for i in range(len(temp_model.feature_input_order)):
         xxmutables.append(True)
