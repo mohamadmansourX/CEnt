@@ -232,8 +232,8 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         predicted__test_values = clf.predict(test_features)
         predicted__train_values = clf.predict(train_features)
         # Calculate the accuracy
-        self.tree_accuracy_test['Train'].append(accuracy_score(target_values_train, predicted__train_values))
-        self.tree_accuracy_test['Test'].append(accuracy_score(target_values_test, predicted__test_values))
+        self.tree_scores['Train'].append(accuracy_score(target_values_train, predicted__train_values))
+        self.tree_scores['Test'].append(accuracy_score(target_values_test, predicted__test_values))
         return clf
 
     def tree_based_search(self, factual):
