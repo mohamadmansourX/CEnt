@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from glob import glob
 import os
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 # Build the VAE
 class VariationalAutoencoder(nn.Module):
@@ -46,7 +47,7 @@ class VariationalAutoencoder(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=self.params['learning_rate'],
                                     weight_decay=self.params['weight_decay'])
         # Define the loss function
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.MSELoss(reduction='sum')
         # Define the cuda
         if self.params['cuda']:
             self.cuda()
@@ -103,6 +104,8 @@ class VariationalAutoencoder(nn.Module):
         plt.plot(self.loss_list['Epochs'], self.loss_list['Epoch_Loss'], label='Loss', color='red')
         # Plot Best Epoch Loss in blue
         plt.plot(self.loss_list['Epochs'], self.loss_list['Best_Epoch_Loss'], label='Best Loss', color='blue', linestyle='dashdot')
+        # Plot Best Epoch Loss in blue
+        plt.plot(self.loss_list['Epochs'], self.loss_list['Epoch_Test_MSE'], label='Test MSE Loss', color='green', linestyle='dashdot')
         # Set the x-axis label
         plt.xlabel('Epochs')
         # Set the y-axis label
@@ -123,14 +126,20 @@ class VariationalAutoencoder(nn.Module):
         self.train()
         # Define loss list for visualization
         self.loss_list = {'Steps':[],'Loss':[],
-                          'Epoch_Loss':[],'Best_Epoch_Loss':[],
+                          'Epoch_Loss':[],'Epoch_Test_MSE':[],'Best_Epoch_Loss':[],
                           'Epochs':[]}
         # Define Best loss param
         best_loss = -1
         best_checkpoint_path = None
         if isinstance(xtrain, pd.DataFrame):
             xtrain = xtrain.values
+        
+        # Split xtrain to train and test
+        xtrain, xtest = train_test_split(xtrain, test_size=0.2, random_state=42)
+
         xtrain = torch.from_numpy(xtrain).type(torch.FloatTensor)
+        xtest = torch.from_numpy(xtest).type(torch.FloatTensor)
+
         # loop on self.params['epochs']
         for epoch in range(self.params['epochs']):
             train_loader = torch.utils.data.DataLoader(
@@ -149,13 +158,29 @@ class VariationalAutoencoder(nn.Module):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                loss_val = loss.data.cpu().numpy()
+                loss_val = loss.data.detach().numpy()
                 self.loss_list['Loss'].append(loss_val)
                 steps = epoch * len(train_loader) + i
                 self.loss_list['Steps'].append(steps)
                 loss_epoch.append(loss_val)
-                
-            print('Epoch: {}, ELBO Loss: {}'.format(epoch, np.mean(loss_epoch)))
+            
+            test_loader = torch.utils.data.DataLoader(
+                xtest, batch_size=self.params['batch_size'], shuffle=True
+            )
+            loss_epoch_test = []
+            # loop on the batches
+            for i, (x) in enumerate(test_loader):
+                if self.params['cuda']:
+                    x = x.cuda()
+                # Forward pass
+                x_hat, mu, log_var = self.forward(x)
+                # Compute the MSE loss
+                loss_epoch_test.append(self.criterion(x_hat, x).detach().numpy())
+            # Compute the mean loss
+            loss_epoch_test = np.mean(loss_epoch_test)
+            self.loss_list['Epoch_Test_MSE'].append(loss_epoch_test)
+
+            print('Epoch: {}, ELBO Loss: {}, Test MSELoss: {}'.format(epoch, np.mean(loss_epoch), loss_epoch_test))
             if epoch == 0:
                 # Set best_loss to loss_epoch mean
                 best_loss = np.mean(loss_epoch)
