@@ -78,11 +78,8 @@ class VAEBenchmark(Evaluation):
         ).to_numpy()
 
         # Get the VAE encodings for the factuals and counterfactuals
-        arr_f = torch.FloatTensor(arr_f)
-        arr_cf = torch.FloatTensor(arr_cf)
-
-        vae_encodings_f = self.vae.encode(arr_f)[0].detach().numpy()
-        vae_encodings_cf = self.vae.encode(arr_cf)[0].detach().numpy()
+        vae_encodings_f = self.vae.get_encodings(arr_f)
+        vae_encodings_cf = self.vae.get_encodings(arr_cf)
 
         # Get the VAE distances between the factuals and counterfactuals
         vae_distances = self.get_distances(vae_encodings_f, vae_encodings_cf)

@@ -152,6 +152,7 @@ class VariationalAutoencoder(nn.Module):
                 xtrain, batch_size=self.params['batch_size'], shuffle=True
             )
             loss_epoch = []
+            beta = epoch / self.params['epochs']
             # loop on the batches
             for i, (x) in enumerate(train_loader):
                 if self.params['cuda']:
@@ -159,7 +160,7 @@ class VariationalAutoencoder(nn.Module):
                 # Forward pass
                 x_hat, mu, log_var = self.forward(x)
                 # Compute the loss
-                loss = self.loss_function(x, x_hat, mu, log_var)
+                loss = self.loss_function(x, x_hat, mu, log_var, beta)
                 # Backward pass
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -209,14 +210,14 @@ class VariationalAutoencoder(nn.Module):
             self.loss_list['Epochs'].append(epoch)
         self.eval()    
     
-    def loss_function(self, x, x_hat, mu, log_var):
+    def loss_function(self, x, x_hat, mu, log_var,beta):
         # Compute the loss
         loss = self.criterion(x_hat, x)
         # Add the KL divergence
         kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(),
                                                dim = 1), dim = 0)
         # Return the loss
-        loss = loss + self.params['kld_weight'] * kld_loss
+        loss = loss + beta * self.params['kld_weight'] * kld_loss
         return loss
 
     def get_encodings(self, x):

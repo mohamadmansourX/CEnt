@@ -107,7 +107,7 @@ recourse_methods:
       binary_cat_features: True
   causal_recourse:
     hyperparams:
-      optimization_approach: "gradient_descent"
+      optimization_approach: "brute_force"
       num_samples: 10
       scm: None
   focus:

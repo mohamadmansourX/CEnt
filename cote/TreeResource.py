@@ -100,7 +100,9 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         self.dataset = dataset.df.copy()
         # Change dataset target to the one predicted by mlmodel
         print("Changing target to predicted target...")
+        previous_preds_was = self.dataset[self.mlmodel.data.target].copy()
         self.dataset[self.mlmodel.data.target] = self.mlmodel.predict(self.dataset).round().astype(int)
+        print('Accuracy of changing through model is {:.4f}'.format(accuracy_score(self.dataset[self.mlmodel.data.target], previous_preds_was)))
         print("Get Encodings...")
         self.dataset['VAE_ENCODED'] = self.get_encodeings(self.dataset.copy())
         ## These are added to optimize neighbor sampling for DT which used to take ~0.4 seconds and now will be 
@@ -116,7 +118,6 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         # TODO : Need to make NNDescent per target class
         self.distance_metric = distance_metric
         print("Total values are : ", self.dataset.shape[0])
-        print(self.dataset[self.mlmodel.data.target])
         print("Positive values are : ", self.dataset[self.dataset[self.mlmodel.data.target] == 1].shape[0])
         print("Negative values are : ", self.dataset[self.dataset[self.mlmodel.data.target] == 0].shape[0])
         self.nnd = NNDescent(np.array(self.dataset["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
@@ -223,9 +224,8 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         '''
         # Fix DataFrame to be able to feed to the VAE
         input_data = data.copy()[self._mlmodel.feature_input_order]
-        input_data = torch.FloatTensor(input_data.values)
         # Get the encoded features
-        encoded_values = self.vae.encode(input_data)[0].detach().numpy()
+        encoded_values = self.vae.get_encodings(input_data)
         encoded_values = [i for i in encoded_values]
         return encoded_values
 
@@ -355,6 +355,8 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
                 else:
                     sigma = 0.15
                     gamma = 1
+                sigma = 0.15
+                gamma = 0
                 neighbor = nearest_leaf_node.generate_point(factual.copy(), data_catalog = self.data_catalog, sigma = sigma, gamma = gamma)
                 neighb_df = pd.DataFrame([neighbor[self.mlmodel.feature_input_order]])
                 self.neighb_df = neighb_df
