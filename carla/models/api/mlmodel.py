@@ -177,7 +177,7 @@ class MLModel(ABC):
             for i in self.data.immutables
         ]
         # find the index of the immutables in the feature input order
-        immutable = [self.feature_input_order.index(col) for col in immutable]
+        # @MM TODO immutable = [self.feature_input_order.index(col) for col in immutable]
         # make a mask
         mutable_mask = np.ones(len(self.feature_input_order), dtype=bool)
         # set the immutables to False
