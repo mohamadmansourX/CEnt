@@ -39,6 +39,30 @@ class DataModels:
     self.load_data_modesl(data_name=self.data_name, factuals_length = factuals_length)
     # Load models
     self.load_models(logging_file = logging_file)
+    # load the factuals such that each two frameworks of the same model_type have the same factuals
+    # (verify the same factuals)
+
+    self.factuals = {}
+    for model_type in self.models_zoo:
+      self.factuals[model_type] = self.data_test
+      print('{} model type has {} factuals'.format(model_type, self.factuals[model_type].shape[0]))
+      print('{:.1f} % positive factuals and {:.1f} % negative factuals'.format(100*self.factuals[model_type][self.factuals[model_type][self.dataset.target] == 1].shape[0]/self.factuals[model_type].shape[0], 100*self.factuals[model_type][self.factuals[model_type][self.dataset.target] == 0].shape[0]/self.factuals[model_type].shape[0]))
+      # Check for each framework in that model type if both models predicts the same as the original dataset
+      for framework in self.models_zoo[model_type]:
+        # get the factuals where the model predicts the same as the original dataset
+        factuals_predictions = self.models_zoo[model_type][framework].predict(self.factuals[model_type][self.models_zoo[model_type][framework].feature_input_order])
+        factuals_predictions = np.where(factuals_predictions > 0.5, 1, 0)
+        print('\tAccuracy of {} model type and {} framework is {}'.format(model_type, framework, accuracy_score(self.factuals[model_type][self.dataset.target], factuals_predictions)))
+        # Get the booleans where predict the same as the original dataset
+        factuals_predictions = np.squeeze(factuals_predictions)
+        bollss = factuals_predictions == self.factuals[model_type][self.dataset.target].values
+        self.factuals[model_type] = self.factuals[model_type][bollss]
+        print('\t{} model type has {} factuals'.format(model_type, self.factuals[model_type].shape[0]))
+      print('Resulting shape of {} model type is {}'.format(model_type, self.factuals[model_type].shape[0]))
+      print('{:.1f} % positive factuals and {:.1f} % negative factuals\n'.format(100*self.factuals[model_type][self.factuals[model_type][self.dataset.target] == 1].shape[0]/self.factuals[model_type].shape[0], 100*self.factuals[model_type][self.factuals[model_type][self.dataset.target] == 0].shape[0]/self.factuals[model_type].shape[0]))
+
+      self.factuals[model_type] = self.factuals[model_type].sample(factuals_length)
+
     # Get data features
     self.get_data_features()
 
@@ -47,12 +71,12 @@ class DataModels:
     self.dataset = OnlineCatalog(data_name)
     # Prepare Training and Test Data
     # test_size is the percentages of factuals to be used for testing
-    factuals_length_percentage = factuals_length/self.dataset.df.shape[0] * 3
+    factuals_length_percentage = factuals_length/self.dataset.df.shape[0] * 6
     self.data_train, self.data_test = train_test_split(self.dataset.df, test_size=factuals_length_percentage)
+    print("Original dataset has {} factuals".format(self.dataset.df.shape[0]))
+    print("Training dataset has {} factuals".format(self.data_train.shape[0]))
+    print("Test dataset     has {} factuals".format(self.data_test.shape[0]))
     self.trainData = MyData(self.data_train.copy(), self.dataset.target, self.dataset.immutables)
-
-    # load artificial neural network from catalog
-    self.factuals = self.data_test.sample(factuals_length)
 
   # Load models by training data
   def load_models(self, logging_file = 'models_logs.txt'):
@@ -60,9 +84,9 @@ class DataModels:
     print("Loading models... --- logs will be saved to {}".format(logging_file))
     with contextlib.redirect_stdout(open(logging_file, 'w')):
       # Define models configs
-      parms_training = {"ann":    {"learning_rate": 0.002, "epochs": 10, "batch_size": 128, "hidden_size": [13,4]},
-                        "linear": {"learning_rate": 0.002, "epochs": 50, "batch_size": 128, "hidden_size": [13,4]},
-                        "forest": {"max_depth": 2, "n_estimators": 5}}
+      parms_training = {"ann":    {"learning_rate": 0.002, "epochs": 10, "batch_size": 128, "hidden_size": [18, 9]},
+                        "linear": {"learning_rate": 0.002, "epochs": 50, "batch_size": 128},
+                        "forest": {"max_depth": 3, "n_estimators": 5}}
       # Define models_zoo to store models
       self.models_zoo = {"ann": {"tensorflow": '', "pytorch": ''}, 
                     "linear": {"tensorflow": '', "pytorch": ''},
@@ -81,6 +105,15 @@ class DataModels:
           
           # Save model
           self.models_zoo[model_type][framework] = model
+          # TODO @MM: I'm loading Models online incase ann and TF since
+          # The linear models are performing bad and resulting with 0
+          # samples for the positive sets
+          if model_type == 'ann' and framework == 'tensorflow':
+            self.models_zoo[model_type][framework] = MLModelCatalog(
+                        dataset,
+                        model_type=model_type,
+                        load_online=True,
+                        backend=framework)
     # Save model metrics
     frameworks = []
     model_types = []

@@ -97,7 +97,9 @@ class VariationalAutoencoder(nn.Module):
         # Set the legend
         plt.legend()
         # Show the plot
-        plt.show()
+        if plot_flag:
+            # Show the plot
+            plt.show()
         # Plot Epoch Loss and Best Epoch Loss Vs Epochs
         plt.figure(figsize=(10,5))
         # Plot Epoch Loss in red

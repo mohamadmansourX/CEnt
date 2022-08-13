@@ -39,6 +39,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
       "step": 0.1,
       "max_iter": 1000,
       "clamp": True,
+      "treeWarmUp": 5,
       "target_class": [0, 1],
       "binary_cat_features": True,
       "myvae_params": {
@@ -86,6 +87,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         self.hyperparams = merge_default_parameters(hyperparams, self._DEFAULT_HYPERPARAMS)
         # Construct the VAE
         # self.vae = TEMP_VAE
+        # No need to change the target of dataset here since VAE trained only on input features
         self.vae = self.load_vae(dataset, self.hyperparams["myvae_params"], mlmodel, mlmodel.data.name)
         # Define feature_input
         self.feature_input_order = []
@@ -95,11 +97,16 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
             else:
                 self.feature_input_order.append(fin)
         # Construct the dataframe with encodings
-        self.dataset = dataset.df
+        self.dataset = dataset.df.copy()
+        # Change dataset target to the one predicted by mlmodel
+        print("Changing target to predicted target...")
+        self.dataset[self.mlmodel.data.target] = self.mlmodel.predict(self.dataset).round().astype(int)
+        print("Get Encodings...")
         self.dataset['VAE_ENCODED'] = self.get_encodeings(self.dataset.copy())
         ## These are added to optimize neighbor sampling for DT which used to take ~0.4 seconds and now will be 
         # NNDescent
         self.data_indexes_m = self.dataset.index
+        print("Initializing the NNDescent...")
         self.set_distance_metric_initialize_nn(self.distance_metric)
         # Load Grid Parameters
         self.hyperparams["tree_params"]["grid_search"] = self.optimize_grid(self.hyperparams["tree_params"]["grid_search"], self.dataset)
@@ -108,6 +115,10 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
     def set_distance_metric_initialize_nn(self, distance_metric):
         # TODO : Need to make NNDescent per target class
         self.distance_metric = distance_metric
+        print("Total values are : ", self.dataset.shape[0])
+        print(self.dataset[self.mlmodel.data.target])
+        print("Positive values are : ", self.dataset[self.dataset[self.mlmodel.data.target] == 1].shape[0])
+        print("Negative values are : ", self.dataset[self.dataset[self.mlmodel.data.target] == 0].shape[0])
         self.nnd = NNDescent(np.array(self.dataset["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
         self.nnd.prepare()
         self.nnd_positive = NNDescent(np.array(self.dataset[self.dataset[self._mlmodel.data.target]==1]["VAE_ENCODED"].values.tolist()), metric=self.distance_metric,random_state=42)
@@ -125,10 +136,10 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         #@TODO: the chunkcs in order of encodings
         """
         copy_data = df.copy()
-        print("DT Warming Up...")
+        print("DT Warming Up on {} fits...".format(self.hyperparams['treeWarmUp']))
         # create a frequency count to count how many times a parameter was selected as best_params
         best_params_list = []
-        for i in range(5):
+        for i in range(self.hyperparams['treeWarmUp']):
             index_factual = df.sample(1).index[0]
             factual = df.loc[index_factual]
             #index_neighbors_0 = self.nnd.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"]*2.5)[0][0].tolist()
@@ -318,10 +329,8 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         # If len of leaf_nodes_with_label is 3, the max_search/5 on the nearest_leaf_node and max_search/3 on the second_nearest_node and max_search/2 on the third_nearest_node
         if len(leaf_nodes_with_label) == 1:
             max_searchs = [self.hyperparams["tree_params"]["max_search"]]
-        elif len(leaf_nodes_with_label) == 2:
-            max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.8, self.hyperparams["tree_params"]["max_search"]*0.2]
         else:
-            max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.7, self.hyperparams["tree_params"]["max_search"]*0.2, self.hyperparams["tree_params"]["max_search"]*0.1]
+            max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.8, self.hyperparams["tree_params"]["max_search"]*0.2]
         # map max_search to int values while rounding up to the nearest int
         max_searchs = [int(round(x)) for x in max_searchs]
         # Loop over max_search

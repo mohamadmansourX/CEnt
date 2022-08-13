@@ -1,3 +1,4 @@
+from copy import deepcopy
 import os
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -11,7 +12,7 @@ warnings.filterwarnings("ignore")
 from carla.data.api import data
 import numpy as np
 import torch
-torch.cuda.is_available = lambda : False
+#torch.cuda.is_available = lambda : False
 import yaml
 from seed_env import seed_my_session
 from typing import Dict, List
@@ -121,10 +122,13 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
     elif "feature_tweak" in method:
         return FOCUS(mlmodel, hyperparams)
     elif "cote" in method:
-        min_entries_per_label = int(data_models.trainData.df.shape[0]*0.02)
-        if min_entries_per_label<900:
-            min_entries_per_label = 900
-        hpr = {"data_name": "data_name","n_search_samples": 300,"p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
+        min_entries_per_label = int(data_models.trainData.df.shape[0]*0.01)
+        if min_entries_per_label<200:
+            print('min_entries_per_label is too small {}, setting it to 200 '.format(min_entries_per_label))
+            min_entries_per_label = 200
+        hpr = {"data_name": "data_name","n_search_samples": 300,
+                "p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
+                "treeWarmUp": 5,
                 "binary_cat_features": True,
                 "myvae_params": {
                     'input_dim': len(mlmodel.feature_input_order),
@@ -135,7 +139,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     'dropout': 0.2,
                     'batch_norm': True,
                     'batch_size': 32,
-                    'epochs': 10,
+                    'epochs': 15,
                     'learning_rate': 0.001,
                     'weight_decay': 0.0,
                     'cuda': False,
@@ -147,7 +151,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     "min_entries_per_label": min_entries_per_label,
                     "grid_search_jobs": -1,
                     "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
-                    "max_search" : 50,
+                    "max_search" : 100,
                     "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7,8,9,10],
                                     "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
                                     "max_features": [0.4, 0.6, 0.8],
@@ -155,7 +159,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                 }
           }
         print_conf(hpr)
-        return TreeBasedContrastiveExplanation(data_models.trainData, mlmodel, hpr, data_catalog= data_models.new_catalog_n)
+        return TreeBasedContrastiveExplanation(deepcopy(data_models.trainData), mlmodel, hpr, data_catalog= data_models.new_catalog_n)
 
     else:
         raise ValueError("Recourse method not known  {}".format(method))
@@ -291,21 +295,18 @@ for data_name in data_names:
     check_csv = os.path.join(OUT_DIR_DATA, 'checks.csv')
     # Loop over recourse methods
     for recourse_method in recourse_methods:
-        print('----------------------------------------\nStarting experiment for recourse method {}\n\n'.format(recourse_method))
-        if recourse_method in NOTWORKING:
-            print('Skipping {} as its in the NOTWORKING list'.format(recourse_method))
-            continue
         # Check supported backend
         supported_backend = get_resource_supported_backend(recourse_method, supported_backend_dict)
         if supported_backend in ['tensorflow', 'pytorch']:
             supported_types = ['linear', 'ann']
         else:
             supported_types = ['forest']
+        print('----------------------------------------\nStarting experiment for recourse method {} in {}\n\n'.format(recourse_method,supported_types))
         
         # Benchmark resource method
         # Loop over supported types
         for supported_type in supported_types:
-            try:
+            if True:
                 # Initialize resource method
                 # create model using first supported backend and supported type just to intialize the model
                 model_temp = data_models.models_zoo[supported_type][supported_backend]
@@ -320,7 +321,7 @@ for data_name in data_names:
                 # Load model
                 model = data_models.models_zoo[supported_type][supported_backend]
                 # Benchmark recourse method
-                benchmark = Benchmark(model, rcmethod,  data_models.factuals.copy().reset_index(drop=True))
+                benchmark = Benchmark(model, rcmethod,  data_models.factuals[supported_type].copy().reset_index(drop=True))
                 # Define metrics
                 measures = [
                     evaluation_catalog.YNN(benchmark.mlmodel, {"y": 5, "cf_label": 1}),
@@ -362,7 +363,7 @@ for data_name in data_names:
                 test_checks_df = pd.DataFrame(test_checks)
                 # Write to csv file
                 test_checks_df.to_csv(check_csv, index=False)
-            except Exception as e:
+            else:#except Exception as e:
                 print('Exception for {}'.format(recourse_method))
                 print(e)
                 test_checks['Resource_Method'].append(recourse_method)
