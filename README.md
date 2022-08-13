@@ -9,6 +9,27 @@
 - [ ] time plot distributions
 
 
+## Recource Methods
+
+- [x] Causal Recourse: Using all the RAMs and crashing the session
+- [x] Cote: Done
+- [x] Dice: Done
+- [x] Growing Spheres: Done
+- [x] Clue: Done
+- [x] CCHVAE: Done
+- [x] CRUDS: Done
+- [ ] Focus: Done
+- [ ] Actionable Recourse: Done
+- [ ] CEM: Done
+- [ ] Revisewachter: Done
+- [ ] Face: Done
+- [ ] Feature Tweak: Done
+
+
+Over 1000 Gridsearch
+{'criterion': 'gini', 'max_depth': 6, 'max_features': 0.8, 'min_samples_leaf': 1, 'min_samples_split': 2, 'splitter': 'best'}
+{'criterion': 'gini', 'max_depth': 9, 'max_features': 0.8, 'min_samples_leaf': 1, 'min_samples_split': 2, 'splitter': 'best'}
+
 ```
 rm -rf outputs/
 

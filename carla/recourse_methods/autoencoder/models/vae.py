@@ -114,7 +114,7 @@ class VariationalAutoencoder(nn.Module):
         batch_size=32,
     ):
         if isinstance(xtrain, pd.DataFrame):
-            xtrain = xtrain.values        
+            xtrain = xtrain.values
 
         train_loader = torch.utils.data.DataLoader(
             xtrain, batch_size=batch_size, shuffle=True
@@ -126,7 +126,7 @@ class VariationalAutoencoder(nn.Module):
             weight_decay=lambda_reg,
         )
 
-        criterion = nn.MSELoss(reduction="sum")  #BCELoss(reduction="sum")
+        criterion = nn.BCELoss(reduction="sum")
 
         # Train the VAE with the new prior
         ELBO = np.zeros((epochs, 1))
@@ -148,8 +148,8 @@ class VariationalAutoencoder(nn.Module):
                 reconstruction, mu, log_var = self(data)
 
                 recon_loss = criterion(reconstruction, data)
-                # kld_loss = self.kld(mu, log_var)
-                loss = recon_loss # + beta * kld_loss
+                kld_loss = self.kld(mu, log_var)
+                loss = recon_loss + beta * kld_loss
 
                 # Update the parameters
                 optimizer.zero_grad()
