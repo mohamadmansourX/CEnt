@@ -36,8 +36,8 @@ class Benchmark:
         colls.remove(mlmodel.data.target)
         self.mlmodel = mlmodel
         self._recourse_method = recourse_method
-        self._factuals2 = factuals[colls].astype(float).copy()
-        self._factuals = self.mlmodel.get_ordered_features(factuals.copy()).astype(float)
+        self._factuals2 = factuals[colls].copy().sort_index()
+        self._factuals = self.mlmodel.get_ordered_features(factuals.copy().sort_index())
         timers_per_row = []
         counterfacts = []
         for ind in self._factuals.index:
@@ -50,6 +50,9 @@ class Benchmark:
             counterfacts.append(counterfactual)
         # concatenate all 
         self._counterfactuals = pd.concat(counterfacts, axis=0)
+        self._counterfactuals = self.mlmodel.get_ordered_features(self._counterfactuals.copy())
+        # Set index to factuals
+        self._counterfactuals.index = self._factuals.index
         # Copy columns that are not in the counterfactuals
         self._counterfactuals2 = self._counterfactuals.copy()
         for col in self._factuals2.columns:
@@ -73,12 +76,22 @@ class Benchmark:
         pipeline = []
         for measure in measures:
             if 'Constraint_Violation' in measure.columns:
-                pipeline.append(measure.get_evaluation(
-                    counterfactuals=self._counterfactuals2, factuals=self._factuals2
+                try:
+                    pipeline.append(measure.get_evaluation(
+                      counterfactuals=self._counterfactuals2, factuals=self._factuals2
+                      ))
+                except:
+                    pipeline.append(measure.get_evaluation(
+                    counterfactuals=self._counterfactuals, factuals=self._factuals
                     ))
             elif "VAE-Euclidean-Distance" in measure.columns:
-                pipeline.append(measure.get_evaluation(
-                    counterfactuals=self._counterfactuals2, factuals=self._factuals2
+                try:
+                    pipeline.append(measure.get_evaluation(
+                      counterfactuals=self._counterfactuals2, factuals=self._factuals2
+                      ))
+                except:
+                    pipeline.append(measure.get_evaluation(
+                    counterfactuals=self._counterfactuals, factuals=self._factuals
                     ))
             else:
                 pipeline.append(measure.get_evaluation(
