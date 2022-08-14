@@ -194,7 +194,7 @@ supported_backend_dict = {'pytorch': ["cchvae", "clue", "cruds", "dice", "face",
 
 
 
-FACTUAL_NUMBER = 50
+FACTUAL_NUMBER = 200
 
 data_names = ['adult','compas', 'give_me_some_credit', 'heloc']
 
@@ -206,7 +206,7 @@ NOTWORKING = [] # ['causal_recourse','focus'] # NOTWORKING
 TESTEDSUCCESSFULLY = ['clue','dice','cote','cchvae'] # ALREADY TESTED
 
 
-data_names = ['adult','heloc']
+data_names = ['compas','adult']
 
 recourse_methods = ['cote','dice','growing_spheres','clue',
                     'cchvae','cruds','focus',

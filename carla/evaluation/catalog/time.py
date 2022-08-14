@@ -11,10 +11,10 @@ class AvgTime(Evaluation):
     def __init__(self, hyperparameters):
         super().__init__(hyperparameters)
         self.time = hyperparameters["time"]
-        self.columns = ["avg_time"]
+        self.columns = ["timers"]
 
     def get_evaluation(
         self, factuals: pd.DataFrame, counterfactuals: pd.DataFrame
     ) -> pd.DataFrame:
-        avg_time = self.time / len(counterfactuals)
-        return pd.DataFrame([[avg_time]], columns=self.columns)
+        # Return the list of self.time as a dataframe with columns self.columns
+        return pd.DataFrame(self.time, columns=self.columns)

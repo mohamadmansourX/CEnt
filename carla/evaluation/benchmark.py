@@ -38,15 +38,24 @@ class Benchmark:
         self._recourse_method = recourse_method
         self._factuals2 = factuals[colls].astype(float).copy()
         self._factuals = self.mlmodel.get_ordered_features(factuals.copy()).astype(float)
-        start = timeit.default_timer()
-        self._counterfactuals = recourse_method.get_counterfactuals(self._factuals.copy()).astype(float)
-        stop = timeit.default_timer()
+        timers_per_row = []
+        counterfacts = []
+        for ind in self._factuals.index:
+            # Format self._factuals.loc[ind] as dataframe
+            # Generate counterfactual
+            start_timer = timeit.default_timer()
+            counterfactual = self._recourse_method.get_counterfactuals(self._factuals.loc[[ind]]).astype(float)
+            # Append time and counterfactual to list
+            timers_per_row.append(timeit.default_timer() - start_timer)
+            counterfacts.append(counterfactual)
+        # concatenate all 
+        self._counterfactuals = pd.concat(counterfacts, axis=1)
         # Copy columns that are not in the counterfactuals
         self._counterfactuals2 = self._counterfactuals.copy()
         for col in self._factuals2.columns:
             if col not in self._counterfactuals2.columns:
                 self._counterfactuals2[col] = self._factuals2[col]
-        self.timer = stop - start
+        self.timer = timers_per_row
 
     def run_benchmark(self, measures: List[Evaluation]) -> pd.DataFrame:
         """
