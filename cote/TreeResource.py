@@ -321,7 +321,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
             #print("returned")
             return factual_ret[self._mlmodel.feature_input_order]
         # Sort leaf nodes by distance
-        leaf_nodes_with_label = sorted(leaf_nodes_with_label, key=lambda x: len(leaf_node_n.compare_node(x)))
+        leaf_nodes_with_label = sorted(leaf_nodes_with_label, key=lambda x: leaf_node_n.compare_node(x)[1])
         # Get the counterfactual
         returned_neighbor = -1
         counter_taregt = factual[self._mlmodel.data.target]*-1 +1
@@ -333,11 +333,23 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         # If len of leaf_nodes_with_label is 3, the max_search/5 on the nearest_leaf_node and max_search/3 on the second_nearest_node and max_search/2 on the third_nearest_node
         if len(leaf_nodes_with_label) == 1:
             max_searchs = [self.hyperparams["tree_params"]["max_search"]]
-            print("Distance to nearest leaf node: {}".format(len(leaf_node_n.compare_node(leaf_nodes_with_label[0]))))  
-        else:
+            print("Distance to nearest leaf node: {}".format(leaf_node_n.compare_node(leaf_nodes_with_label[0])[1]))
+        elif len(leaf_nodes_with_label) == 2:
             max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.8, self.hyperparams["tree_params"]["max_search"]*0.2]
-            print("Distance to nearest leaf node: {} then {}".format(len(leaf_node_n.compare_node(leaf_nodes_with_label[0])), 
-                                                                     len(leaf_node_n.compare_node(leaf_nodes_with_label[1]))))
+            print("Distance to nearest leaf node: {} then {}".format(leaf_node_n.compare_node(leaf_nodes_with_label[0])[1], 
+                                                                     leaf_node_n.compare_node(leaf_nodes_with_label[1])[1]))
+        else:
+            if leaf_node_n.compare_node(leaf_nodes_with_label[2])[1] - leaf_node_n.compare_node(leaf_nodes_with_label[0])[1] < 2:
+                max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.6, self.hyperparams["tree_params"]["max_search"]*0.2,
+                               self.hyperparams["tree_params"]["max_search"]*0.2]
+                print("Distance to nearest leaf node: {} then {} then {}".format(leaf_node_n.compare_node(leaf_nodes_with_label[0])[1], 
+                                                                        leaf_node_n.compare_node(leaf_nodes_with_label[1])[1], 
+                                                                        leaf_node_n.compare_node(leaf_nodes_with_label[2])[1]))
+            else:
+                max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.8, self.hyperparams["tree_params"]["max_search"]*0.2]
+                print("Distance to nearest leaf node: {} then {}".format(leaf_node_n.compare_node(leaf_nodes_with_label[0])[1], 
+                                                                        leaf_node_n.compare_node(leaf_nodes_with_label[1])[1]))
+
         # map max_search to int values while rounding up to the nearest int
         max_searchs = [int(round(x)) for x in max_searchs]
         # Loop over max_search
@@ -348,11 +360,14 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
             while number_searchs < max_search_i and returned_neighbor is -1:
                 #TODO: Ommitted the checks
                 # if number_searchs is 30% of max_search
-                if number_searchs < max_search_i*0.5:
-                    sigma = 10
+                if number_searchs < max_search_i*0.2:
+                    sigma = 20
+                    gamma = 0
+                elif number_searchs < max_search_i*0.4:
+                    sigma = 5
                     gamma = 0
                 elif number_searchs < max_search_i*0.8:
-                    sigma = 0.5
+                    sigma = 1
                     gamma = 0
                 else:
                     sigma = 0.15

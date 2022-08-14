@@ -65,8 +65,10 @@ class LeafNode:
         # Remove conditions that are common with self
         for condition in self.conditions:
             conditions = [c for c in conditions if c != condition]
+        cond_features = [c.feature for c in conditions]
+        cond_features = list(set(cond_features))
         # Return the remaining conditions
-        return conditions
+        return conditions, len(cond_features)
 
     def merge_conditions(self):
         """
