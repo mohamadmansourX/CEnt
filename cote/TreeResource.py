@@ -209,7 +209,6 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         factuals[self.mlmodel.data.target] = self.mlmodel.predict(factuals).round().astype(int)
         # Get the counterfactuals
         # find counterfactuals
-        self.tree_scores = {'Train':[], 'Test':[]}
         counter_factuals = factuals.apply(
             lambda x: self.tree_based_search(x), axis=1, raw=False
         )

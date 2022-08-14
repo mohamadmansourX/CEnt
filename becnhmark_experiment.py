@@ -1,3 +1,4 @@
+DATA_NAME = 'adult'
 from copy import deepcopy
 import os
 
@@ -157,7 +158,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     "max_search" : 50,
                     "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7],
                                     "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
-                                    "max_features": ['sqrt',None, 'log2',0.8],
+                                    "max_features": ['sqrt',1.0, 'log2',0.8],
                                     }
                 }
           }
@@ -211,7 +212,7 @@ data_names = ['compas','adult']
 recourse_methods = ['cote','dice','growing_spheres','clue',
                     'cchvae','cruds','focus',
                     'cem','revisewachter','face','feature_tweak']
-
+data_names = [DATA_NAME]
 # Define Output Directory
 OUT_DIR = "./outputs/"
 if not os.path.exists(OUT_DIR):
