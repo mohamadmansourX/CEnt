@@ -343,22 +343,23 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
             nearest_leaf_node = leaf_nodes_with_label[rank_node]
             #print("Searching for Neighbor.... {}, {}".format(rank_node, max_search_i))
             while number_searchs < max_search_i and returned_neighbor is -1:
-                # if number_searchs is 30% of max_search
-                if number_searchs < max_search_i*0.3:
-                    sigma = 10
-                    gamma = 0
-                # if number_searchs is 80% of max_search
-                elif number_searchs < max_search_i*0.6:
-                    sigma = 1
-                    gamma = 0
-                # if number_searchs is 80% of max_search
-                elif number_searchs < max_search_i*0.9:
-                    sigma = 0.25
-                    gamma = 0
-                # if number_searchs is 90% of max_search
-                else:
-                    sigma = 0.15
-                    gamma = 1
+                #TODO: Ommitted the checks
+                ## if number_searchs is 30% of max_search
+                #if number_searchs < max_search_i*0.3:
+                #    sigma = 10
+                #    gamma = 0
+                ## if number_searchs is 80% of max_search
+                #elif number_searchs < max_search_i*0.6:
+                #    sigma = 1
+                #    gamma = 0
+                ## if number_searchs is 80% of max_search
+                #elif number_searchs < max_search_i*0.9:
+                #    sigma = 0.25
+                #    gamma = 0
+                ## if number_searchs is 90% of max_search
+                #else:
+                #    sigma = 0.15
+                #    gamma = 1
                 sigma = 0.15
                 gamma = 0
                 neighbor = nearest_leaf_node.generate_point(factual.copy(), data_catalog = self.data_catalog, sigma = sigma, gamma = gamma)

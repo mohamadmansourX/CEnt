@@ -11,7 +11,6 @@
 
 ## Recource Methods
 
-- [x] Causal Recourse: Using all the RAMs and crashing the session
 - [x] Cote [ANN + Linear]: Done
 - [x] Cote [Forest ]: Done
 - [x] Dice: Done
@@ -19,12 +18,13 @@
 - [x] Clue: Done
 - [x] CCHVAE: Done
 - [x] CRUDS: Done
-- [ ] Focus: Done
-- [ ] Actionable Recourse: Done
-- [ ] CEM: Done
-- [ ] Revisewachter: Done
-- [ ] Face: Done
+- [x] Focus: Done
+- [x] CEM: Done
+- [x] Revisewachter: Done
+- [x] Face: Done
 - [ ] Feature Tweak: Done
+- [ ] Actionable Recourse: Requires some more work to be done
+- [ ] Causal Recourse: Using all the RAMs and crashing the session
 
 
 Over 1000 Gridsearch

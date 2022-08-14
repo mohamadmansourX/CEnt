@@ -38,6 +38,8 @@ from carla.recourse_methods.catalog.causal_recourse import constraints, samplers
 import carla.evaluation.catalog as evaluation_catalog
 from cote.TreeResource import TreeBasedContrastiveExplanation
 from vae_benchmark import VAEBenchmark
+from tensorflow import Graph, Session
+from carla.models.catalog import MLModelCatalog
 
 seed_my_session()
 def load_setup() -> Dict:
@@ -117,10 +119,9 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
     elif "causal_recourse" in method:
         return CausalRecourse(mlmodel, hyperparams)
     elif "focus" in method:
-        hyperparams = {'optimizer': 'adam', 'lr': 0.001, 'n_class': 2, 'n_iter': 1000, 'sigma': 1.0, 'temperature': 1.0, 'distance_weight': 0.01, 'distance_func': 'l1'}
         return FOCUS(mlmodel, hyperparams)
     elif "feature_tweak" in method:
-        return FOCUS(mlmodel, hyperparams)
+        return FeatureTweak(mlmodel, hyperparams)
     elif "cote" in method:
         min_entries_per_label = int(data_models.trainData.df.shape[0]*0.01)
         MIN_ENTRIES_PER_LABEL_THRESH = 500
@@ -302,39 +303,77 @@ for data_name in data_names:
             supported_types = ['linear', 'ann']
         else:
             supported_types = ['forest']
+        if recourse_method == 'cote':
+            supported_types = ['linear', 'ann', 'forest']
         print('----------------------------------------\nStarting experiment for recourse method {} in {}\n\n'.format(recourse_method,supported_types))
         
         # Benchmark resource method
         # Loop over supported types
         for supported_type in supported_types:
-            if True:
-                # Initialize resource method
-                # create model using first supported backend and supported type just to intialize the model
-                model_temp = data_models.models_zoo[supported_type][supported_backend]
-
-                if recourse_method in setup_catalog:
-                    if 'hyperparams' in setup_catalog[recourse_method]:
-                        hyperpars = setup_catalog[recourse_method]['hyperparams']
+            if recourse_method == 'cote':
+                if supported_type in ['linear', 'ann']:
+                    supported_backend = 'tensorflow'
                 else:
-                    hyperpars = {}
+                    supported_backend = 'xgboost'
+            try:
+                if recourse_method =='cem':
+                    hyperparams_cem = {"data_name": data_name}
+                    graph = Graph()
+                    with graph.as_default():
+                        ann_sess = Session()
+                        with ann_sess.as_default():
+                            model_temp = MLModelCatalog(
+                                            data=data_models.dataset,
+                                            model_type='ann',
+                                            load_online=True,
+                                            backend="tensorflow",
+                                        )
+                            measures = [
+                                evaluation_catalog.YNN(benchmark.mlmodel, {"y": 5, "cf_label": 1}),
+                                evaluation_catalog.Distance(benchmark.mlmodel),
+                                evaluation_catalog.SuccessRate(),
+                                evaluation_catalog.Redundancy(benchmark.mlmodel, {"cf_label": 1}),
+                                evaluation_catalog.ConstraintViolation(benchmark.mlmodel),
+                                evaluation_catalog.AvgTime({"time": benchmark.timer}),
+                                vae_bench
+                            ]
+                            rcmethod = CEM(
+                                    sess=ann_sess,
+                                    mlmodel=model_temp,
+                                    hyperparams=hyperparams_cem,
+                                )
 
-                rcmethod = intialialize_recourse_method(recourse_method, hyperpars, model_temp, data_models)
-                # Load model
-                model = data_models.models_zoo[supported_type][supported_backend]
-                # Benchmark recourse method
-                benchmark = Benchmark(model, rcmethod,  data_models.factuals[supported_type].copy().reset_index(drop=True))
-                # Define metrics
-                measures = [
-                    evaluation_catalog.YNN(benchmark.mlmodel, {"y": 5, "cf_label": 1}),
-                    evaluation_catalog.Distance(benchmark.mlmodel),
-                    evaluation_catalog.SuccessRate(),
-                    evaluation_catalog.Redundancy(benchmark.mlmodel, {"cf_label": 1}),
-                    evaluation_catalog.ConstraintViolation(benchmark.mlmodel),
-                    evaluation_catalog.AvgTime({"time": benchmark.timer}),
-                    vae_bench
-                ]
-                # Run the benchmark and return the mean
-                resource_bench = benchmark.run_benchmark(measures = measures)
+                            # Benchmark recourse method
+                            benchmark = Benchmark(model_temp, rcmethod,  data_models.factuals[supported_type].copy().reset_index(drop=True))
+                            resource_bench = benchmark.run_benchmark(measures = measures)
+                else:
+                    # Initialize resource method
+                    # create model using first supported backend and supported type just to intialize the model
+                    model_temp = data_models.models_zoo[supported_type][supported_backend]
+
+                    if recourse_method in setup_catalog:
+                        if 'hyperparams' in setup_catalog[recourse_method]:
+                            hyperpars = setup_catalog[recourse_method]['hyperparams']
+                    else:
+                        hyperpars = {}
+
+                    rcmethod = intialialize_recourse_method(recourse_method, hyperpars, model_temp, data_models)
+                    # Load model
+                    model = data_models.models_zoo[supported_type][supported_backend]
+                    # Benchmark recourse method
+                    benchmark = Benchmark(model, rcmethod,  data_models.factuals[supported_type].copy().reset_index(drop=True))
+                    # Define metrics
+                    measures = [
+                        evaluation_catalog.YNN(benchmark.mlmodel, {"y": 5, "cf_label": 1}),
+                        evaluation_catalog.Distance(benchmark.mlmodel),
+                        evaluation_catalog.SuccessRate(),
+                        evaluation_catalog.Redundancy(benchmark.mlmodel, {"cf_label": 1}),
+                        evaluation_catalog.ConstraintViolation(benchmark.mlmodel),
+                        evaluation_catalog.AvgTime({"time": benchmark.timer}),
+                        vae_bench
+                    ]
+                    # Run the benchmark and return the mean
+                    resource_bench = benchmark.run_benchmark(measures = measures)
                 bench_csv = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}_bench.csv'.format(recourse_method, supported_backend, supported_type))
                 bench_csv_factuals = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}_factuals.csv'.format(recourse_method, supported_backend, supported_type))
                 bench_csv_counterfactuals = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}_counterfactuals.csv'.format(recourse_method, supported_backend, supported_type))
@@ -364,7 +403,7 @@ for data_name in data_names:
                 test_checks_df = pd.DataFrame(test_checks)
                 # Write to csv file
                 test_checks_df.to_csv(check_csv, index=False)
-            else:#except Exception as e:
+            except Exception as e:
                 print('Exception for {}'.format(recourse_method))
                 print(e)
                 test_checks['Resource_Method'].append(recourse_method)
