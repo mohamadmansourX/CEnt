@@ -127,21 +127,22 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
         MIN_ENTRIES_PER_LABEL_THRESH = 500
         if min_entries_per_label<MIN_ENTRIES_PER_LABEL_THRESH:
             print('min_entries_per_label is too small {}, setting it to {} '.format(min_entries_per_label,MIN_ENTRIES_PER_LABEL_THRESH))
-            min_entries_per_label = MIN_ENTRIES_PER_LABEL_THRESH
+        #TODO: @MM Return this to 1% of data
+        min_entries_per_label = MIN_ENTRIES_PER_LABEL_THRESH
         hpr = {"data_name": "data_name","n_search_samples": 300,
                 "p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
                 "treeWarmUp": 5,
                 "binary_cat_features": True,
                 "myvae_params": {
                     'input_dim': len(mlmodel.feature_input_order),
-                    'kld_weight': 0.00025,
+                    'kld_weight': 0.00015,
                     'layers': layers,
                     'latent_dim': latent_dim,
                     'hidden_activation': 'relu',
                     'dropout': 0.2,
                     'batch_norm': True,
-                    'batch_size': 512,
-                    'epochs': 1,
+                    'batch_size': 32,
+                    'epochs': 15,
                     'learning_rate': 0.001,
                     'weight_decay': 0.000001,
                     'cuda': False,
@@ -153,10 +154,10 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     "min_entries_per_label": min_entries_per_label,
                     "grid_search_jobs": -1,
                     "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
-                    "max_search" : 10,
-                    "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7,8,9,10],
+                    "max_search" : 50,
+                    "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5],
                                     "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
-                                    "max_features": [0.4, 0.6, 0.8],
+                                    "max_features": ['sqrt',None, 'log2',0.8],
                                     }
                 }
           }
@@ -207,8 +208,9 @@ TESTEDSUCCESSFULLY = ['clue','dice','cote','cchvae'] # ALREADY TESTED
 
 data_names = ['adult','heloc']
 
-recourse_methods = ['cote','dice','growing_spheres']
-
+recourse_methods = ['cote','dice','growing_spheres','clue',
+                    'cchvae','cruds','focus',
+                    'cem','revisewachter','face','feature_tweak']
 
 # Define Output Directory
 OUT_DIR = "./outputs/"
@@ -273,8 +275,8 @@ for data_name in data_names:
             'hidden_activation': 'relu',
             'dropout': 0.2,
             'batch_norm': True,
-            'batch_size': 512,
-            'epochs': 1,
+            'batch_size': 32,
+            'epochs': 15,
             'learning_rate': 0.001,
             'weight_decay': 0.000001,
             'cuda': False,
