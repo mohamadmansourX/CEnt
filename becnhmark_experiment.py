@@ -155,7 +155,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     "grid_search_jobs": -1,
                     "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
                     "max_search" : 50,
-                    "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5],
+                    "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7],
                                     "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
                                     "max_features": ['sqrt',None, 'log2',0.8],
                                     }

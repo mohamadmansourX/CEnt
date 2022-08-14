@@ -49,7 +49,7 @@ class Benchmark:
             timers_per_row.append(timeit.default_timer() - start_timer)
             counterfacts.append(counterfactual)
         # concatenate all 
-        self._counterfactuals = pd.concat(counterfacts, axis=1)
+        self._counterfactuals = pd.concat(counterfacts, axis=0)
         # Copy columns that are not in the counterfactuals
         self._counterfactuals2 = self._counterfactuals.copy()
         for col in self._factuals2.columns:
