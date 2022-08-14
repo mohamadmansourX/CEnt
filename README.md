@@ -12,7 +12,8 @@
 ## Recource Methods
 
 - [x] Causal Recourse: Using all the RAMs and crashing the session
-- [x] Cote: Done
+- [x] Cote [ANN + Linear]: Done
+- [x] Cote [Forest ]: Done
 - [x] Dice: Done
 - [x] Growing Spheres: Done
 - [x] Clue: Done

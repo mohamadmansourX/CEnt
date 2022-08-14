@@ -100,7 +100,10 @@ class VariationalAutoencoder(nn.Module):
         if plot_flag:
             # Show the plot
             plt.show()
-        # Plot Epoch Loss and Best Epoch Loss Vs Epochs
+        else:
+            save_path2 = '.'.join(save_path.split('.')[:-1])+ '_steps.'+save_path.split('.')[-1]
+            # Save plt to plt.png
+            plt.savefig(save_path2)# Plot Epoch Loss and Best Epoch Loss Vs Epochs
         plt.figure(figsize=(10,5))
         # Plot Epoch Loss in red
         plt.plot(self.loss_list['Epochs'], self.loss_list['Epoch_Loss'], label='Loss', color='red')

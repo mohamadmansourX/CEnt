@@ -165,6 +165,9 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         best_params_listt = pd.DataFrame(best_params_list)
         for key in grid_tree.best_params_:
             best_params[key] = best_params_listt[key].value_counts().index[0]
+            if key == 'min_samples_split':
+                if best_params[key] >1.1:
+                    best_params[key] = int(best_params[key])
         # Return the best parameters
         print(best_params)
         return best_params
@@ -203,6 +206,7 @@ class TreeBasedContrastiveExplanation(RecourseMethod):
         '''
         # Get the encoded features of factuals
         factuals["VAE_ENCODED"] = self.get_encodeings(factuals)
+        factuals[self.mlmodel.data.target] = self.mlmodel.predict(factuals).round().astype(int)
         # Get the counterfactuals
         # find counterfactuals
         self.tree_scores = {'Train':[], 'Test':[]}
