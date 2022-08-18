@@ -336,6 +336,7 @@ class CEnt(RecourseMethod):
 
         # map max_search to int values while rounding up to the nearest int
         max_searchs = [int(round(x)) for x in max_searchs]
+        self.found_node = None
         # Loop over max_search
         for rank_node, max_search_i in enumerate(max_searchs):
             number_searchs = 0
@@ -360,6 +361,7 @@ class CEnt(RecourseMethod):
                 probs_p = self.mlmodel.predict_proba(neighb_df)
                 if counter_taregt == np.argmax(probs_p):
                     returned_neighbor = neighbor
+                    self.found_node = nearest_leaf_node
                     break
                 number_searchs += 1
             if returned_neighbor is not -1:
