@@ -1,10 +1,6 @@
 """
 Tree Leaf utils
 """
-
-# !git clone https://github.com/carla-recourse/CARLA.git
-
-
 import enum
 from typing import Dict, List, Tuple, Union
 import pandas as pd

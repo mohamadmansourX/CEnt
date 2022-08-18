@@ -10,3 +10,4 @@ jinja2==2.11.3
 networkx==2.5.1
 scipy==1.6.2
 markupsafe==2.0.1
+pynndescent==0.5.7

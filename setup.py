@@ -51,6 +51,6 @@ setup(
         "ipython",
         "keras==2.3.0",
         "xgboost==1.4.2",
-        "causalgraphicalmodels==0.0.4",
+        "causalgraphicalmodels==0.0.4"
     ],
 )

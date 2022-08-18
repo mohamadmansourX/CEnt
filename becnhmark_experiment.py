@@ -35,7 +35,7 @@ from carla.recourse_methods import (
 )
 from carla.recourse_methods.catalog.causal_recourse import constraints, samplers
 import carla.evaluation.catalog as evaluation_catalog
-from cent.TreeResource import CEnt
+from cent.method import CEnt
 from vae_benchmark import VAEBenchmark
 from tensorflow import Graph, Session
 from carla.models.catalog import MLModelCatalog
@@ -141,7 +141,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                     'dropout': 0.2,
                     'batch_norm': True,
                     'batch_size': 32,
-                    'epochs': 10,
+                    'epochs': 1,
                     'learning_rate': 0.001,
                     'weight_decay': 0.000001,
                     'cuda': False,
@@ -152,7 +152,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                 "tree_params": {
                     "min_entries_per_label": min_entries_per_label,
                     "grid_search_jobs": -1,
-                    "min_weight_gini": 100, # set to 0.5 since here both class have same prob,
+                    "min_weight_gini": 100,
                     "max_search" : 50,
                     "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7],
                                     "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
@@ -175,23 +175,6 @@ supported_backend_dict = {'pytorch': ["cchvae", "clue", "cruds", "dice", "face",
                         'tensorflow': ['cem', 'dice', 'face', 'growing_spheres', 'causal_recourse','actionable_recourse','cent'],
                         'sklearn': ['feature_tweak','focus'],
                         'xgboost': ['feature_tweak','focus','cent']}
-
-
-# VAE distance in benchmarking                                                  DONE
-# Github migration                                                              DONE
-# clue, dice, face, growing_spheres, [focus, cem,] crude, wama tayasar          ~DONE
-# VAE latent representation layer size according to data columns                ~DONE
-# VAE constraint
-# VAE encodings distance in benchmarking                                        DONE
-# Implement our working version of VAE (tested on MNIST with 2 neurons)         DONE
-# Fix Best Metric in our version of VAE (load the best instead of using latest) DONE
-# Save Benchmark results per row, factuals, counterfactuals                     DONE
-# Save Tree results per row (Some time is added for inf)                        DONE
-#       For (3124, 15) nearest neighbors, we have the following timings: 
-#               1. DTree fitting per row: 11.6 ms ± 1.72 ms per run
-#               2. Scoring (Inference+Score): 3.9 ms ± 126 µs per run
-
-
 
 FACTUAL_NUMBER = 200
 
@@ -266,7 +249,7 @@ for data_name in data_names:
             'dropout': 0.2,
             'batch_norm': True,
             'batch_size': 32,
-            'epochs': 15,
+            'epochs': 1,
             'learning_rate': 0.001,
             'weight_decay': 0.000001,
             'cuda': False,

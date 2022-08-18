@@ -45,22 +45,15 @@ class DataModels:
     self.factuals = {}
     for model_type in self.models_zoo:
       self.factuals[model_type] = self.data_test
-      print('{} model type has {} factuals'.format(model_type, self.factuals[model_type].shape[0]))
-      print('{:.1f} % positive factuals and {:.1f} % negative factuals'.format(100*self.factuals[model_type][self.factuals[model_type][self.dataset.target] == 1].shape[0]/self.factuals[model_type].shape[0], 100*self.factuals[model_type][self.factuals[model_type][self.dataset.target] == 0].shape[0]/self.factuals[model_type].shape[0]))
       # Check for each framework in that model type if both models predicts the same as the original dataset
       for framework in self.models_zoo[model_type]:
         # get the factuals where the model predicts the same as the original dataset
         factuals_predictions = self.models_zoo[model_type][framework].predict(self.factuals[model_type][self.models_zoo[model_type][framework].feature_input_order])
         factuals_predictions = np.where(factuals_predictions > 0.5, 1, 0)
-        print('\tAccuracy of {} model type and {} framework is {}'.format(model_type, framework, accuracy_score(self.factuals[model_type][self.dataset.target], factuals_predictions)))
         # Get the booleans where predict the same as the original dataset
         factuals_predictions = np.squeeze(factuals_predictions)
         bollss = factuals_predictions == self.factuals[model_type][self.dataset.target].values
         self.factuals[model_type] = self.factuals[model_type][bollss]
-        print('\t{} model type has {} factuals'.format(model_type, self.factuals[model_type].shape[0]))
-      print('Resulting shape of {} model type is {}'.format(model_type, self.factuals[model_type].shape[0]))
-      print('{:.1f} % positive factuals and {:.1f} % negative factuals\n'.format(100*self.factuals[model_type][self.factuals[model_type][self.dataset.target] == 1].shape[0]/self.factuals[model_type].shape[0], 100*self.factuals[model_type][self.factuals[model_type][self.dataset.target] == 0].shape[0]/self.factuals[model_type].shape[0]))
-
       self.factuals[model_type] = self.factuals[model_type].sample(factuals_length)
 
     # Get data features
@@ -73,9 +66,6 @@ class DataModels:
     # test_size is the percentages of factuals to be used for testing
     factuals_length_percentage = factuals_length/self.dataset.df.shape[0] * 6
     self.data_train, self.data_test = train_test_split(self.dataset.df, test_size=factuals_length_percentage)
-    print("Original dataset has {} factuals".format(self.dataset.df.shape[0]))
-    print("Training dataset has {} factuals".format(self.data_train.shape[0]))
-    print("Test dataset     has {} factuals".format(self.data_test.shape[0]))
     self.trainData = MyData(self.data_train.copy(), self.dataset.target, self.dataset.immutables)
 
   # Load models by training data
