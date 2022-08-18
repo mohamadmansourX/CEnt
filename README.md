@@ -42,6 +42,21 @@ conda env create -f environment.yml
 
 CEnt improvement in proximity, latency, and attainability with no constraint violation compared to previous methods
 
+#### Sample Output
+
+```python
+contrast = cent_method.get_counterfactuals(fact)
+
+print(get_rules(cent_method))
+
+>>> To flip the binary class from 0 to 1, we moved our factual to a point satisfying the following conditions:
+	education-num need to be > than 0.8333333432674408
+	marital-status_Non-Married need to be flipped to False
+	capital-loss need to be > than 0.30486685037612915
+
+```
+
+#### Tabular Benchmarks
 <p align="center">
   <img src="docs/tabular_data.png" >
 </p>
