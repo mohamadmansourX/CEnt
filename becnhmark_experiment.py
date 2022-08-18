@@ -1,4 +1,3 @@
-DATA_NAME = 'adult'
 from copy import deepcopy
 import os
 
@@ -13,11 +12,11 @@ warnings.filterwarnings("ignore")
 from carla.data.api import data
 import numpy as np
 import torch
-#torch.cuda.is_available = lambda : False
+torch.cuda.is_available = lambda : False
 import yaml
 from seed_env import seed_my_session
 from typing import Dict, List
-from cote.data_specific import DataModels
+from cent.data_specific import DataModels
 from carla import Benchmark
 import pandas as pd
 from carla.recourse_methods import (
@@ -25,7 +24,6 @@ from carla.recourse_methods import (
     CEM,
     CRUD,
     FOCUS,
-    ActionableRecourse,
     CausalRecourse,
     Clue,
     Dice,
@@ -37,7 +35,7 @@ from carla.recourse_methods import (
 )
 from carla.recourse_methods.catalog.causal_recourse import constraints, samplers
 import carla.evaluation.catalog as evaluation_catalog
-from cote.TreeResource import TreeBasedContrastiveExplanation
+from cent.TreeResource import CEnt
 from vae_benchmark import VAEBenchmark
 from tensorflow import Graph, Session
 from carla.models.catalog import MLModelCatalog
@@ -123,7 +121,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
         return FOCUS(mlmodel, hyperparams)
     elif "feature_tweak" in method:
         return FeatureTweak(mlmodel, hyperparams)
-    elif "cote" in method:
+    elif "cent" in method:
         min_entries_per_label = int(data_models.trainData.df.shape[0]*0.01)
         MIN_ENTRIES_PER_LABEL_THRESH = 500
         if min_entries_per_label<MIN_ENTRIES_PER_LABEL_THRESH:
@@ -136,14 +134,14 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                 "binary_cat_features": True,
                 "myvae_params": {
                     'input_dim': len(mlmodel.feature_input_order),
-                    'kld_weight': 0.00015,
+                    'kld_weight': 0.00025,
                     'layers': layers,
                     'latent_dim': latent_dim,
                     'hidden_activation': 'relu',
                     'dropout': 0.2,
                     'batch_norm': True,
                     'batch_size': 32,
-                    'epochs': 15,
+                    'epochs': 10,
                     'learning_rate': 0.001,
                     'weight_decay': 0.000001,
                     'cuda': False,
@@ -163,7 +161,7 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
                 }
           }
         print_conf(hpr)
-        return TreeBasedContrastiveExplanation(deepcopy(data_models.trainData), mlmodel, hpr, data_catalog= data_models.new_catalog_n)
+        return CEnt(deepcopy(data_models.trainData), mlmodel, hpr, data_catalog= data_models.new_catalog_n)
 
     else:
         raise ValueError("Recourse method not known  {}".format(method))
@@ -174,9 +172,9 @@ setup_catalog = load_setup()
 # data_names = ['adult', 'compas', 'give_me_some_credit', 'heloc']
 supported_backend_dict = {'pytorch': ["cchvae", "clue", "cruds", "dice", "face", 'growing_spheres',"revise" 'wachter', 
                                     'causal_recourse','actionable_recourse'],
-                        'tensorflow': ['cem', 'dice', 'face', 'growing_spheres', 'causal_recourse','actionable_recourse','cote'],
+                        'tensorflow': ['cem', 'dice', 'face', 'growing_spheres', 'causal_recourse','actionable_recourse','cent'],
                         'sklearn': ['feature_tweak','focus'],
-                        'xgboost': ['feature_tweak','focus']}
+                        'xgboost': ['feature_tweak','focus','cent']}
 
 
 # VAE distance in benchmarking                                                  DONE
@@ -199,20 +197,11 @@ FACTUAL_NUMBER = 200
 
 data_names = ['adult','compas', 'give_me_some_credit', 'heloc']
 
-recourse_methods = ['cote','dice','growing_spheres','clue','causal_recourse',
+recourse_methods = ['cent','dice','growing_spheres','clue','causal_recourse',
                     'cchvae','cruds','focus','actionable_recourse',
                     'cem','revisewachter','face','feature_tweak']
 
-NOTWORKING = [] # ['causal_recourse','focus'] # NOTWORKING
-TESTEDSUCCESSFULLY = ['clue','dice','cote','cchvae'] # ALREADY TESTED
 
-
-data_names = ['compas','adult']
-
-recourse_methods = ['cote','dice','growing_spheres','clue',
-                    'cchvae','cruds','focus',
-                    'cem','revisewachter','face','feature_tweak']
-data_names = [DATA_NAME]
 # Define Output Directory
 OUT_DIR = "./outputs/"
 if not os.path.exists(OUT_DIR):
@@ -306,14 +295,14 @@ for data_name in data_names:
             supported_types = ['linear', 'ann']
         else:
             supported_types = ['forest']
-        if recourse_method == 'cote':
+        if recourse_method == 'cent':
             supported_types = ['linear', 'ann', 'forest']
         print('----------------------------------------\nStarting experiment for recourse method {} in {}\n\n'.format(recourse_method,supported_types))
         
         # Benchmark resource method
         # Loop over supported types
         for supported_type in supported_types:
-            if recourse_method == 'cote':
+            if recourse_method == 'cent':
                 if supported_type in ['linear', 'ann']:
                     supported_backend = 'tensorflow'
                 else:
@@ -383,7 +372,7 @@ for data_name in data_names:
                 benchmark._factuals.to_csv(bench_csv_factuals, index=False)
                 benchmark._counterfactuals.to_csv(bench_csv_counterfactuals, index=False)
                 resource_bench.to_csv(bench_csv, index=False)
-                if recourse_method == 'cote':
+                if recourse_method == 'cent':
                     bench_csv_tree_scores = os.path.join(OUT_DIR_DATA_BENCH_CSVS, '{}_{}_{}_DTScores.csv'.format(recourse_method, supported_backend, supported_type))
                     pd.DataFrame(rcmethod.tree_scores).to_csv(bench_csv_tree_scores, index=False)
                 resource_bench = resource_bench.mean()

@@ -6,9 +6,9 @@ import pandas as pd
 from carla import RecourseMethod
 from carla.data.api import data, Data
 from carla.models.api import MLModel
-from cote.vae import VariationalAutoencoder
+from cent.vae import VariationalAutoencoder
 from carla.recourse_methods.processing import merge_default_parameters
-from cote.TreeLeaf import TreeLeafs
+from cent.TreeLeaf import TreeLeafs
 # For Descision Tree implementation
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import tree
@@ -28,7 +28,7 @@ from carla.recourse_methods import GrowingSpheres
 from sklearn.model_selection import GridSearchCV, train_test_split
 tqdm.pandas()
 
-class TreeBasedContrastiveExplanation(RecourseMethod):
+class CEnt(RecourseMethod):
     '''
     Decision Tree Based contrastive explanations
     '''

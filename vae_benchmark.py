@@ -1,7 +1,7 @@
 from carla.evaluation.api import Evaluation
 from carla.recourse_methods.processing import merge_default_parameters
 from carla.evaluation import remove_nans
-from cote.vae import VariationalAutoencoder
+from cent.vae import VariationalAutoencoder
 import numpy as np
 import pandas as pd
 import torch
