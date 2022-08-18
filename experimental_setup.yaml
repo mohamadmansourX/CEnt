@@ -116,6 +116,6 @@ recourse_methods:
   feature_tweak:
     hyperparams:
       optimizer: "adam"
-  cote:
+  cent:
     hyperparams:
       optimizer: "adam"
