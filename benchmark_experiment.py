@@ -36,7 +36,7 @@ from carla.recourse_methods import (
 from carla.recourse_methods.catalog.causal_recourse import constraints, samplers
 import carla.evaluation.catalog as evaluation_catalog
 from cent.method import CEnt
-from cent.method_novae import CEnt as CEntNoVAE
+from cent.method_novae import CEntNoVAE
 from vae_benchmark import VAEBenchmark
 from tensorflow import Graph, Session
 from carla.models.catalog import MLModelCatalog
@@ -122,47 +122,6 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
         return FOCUS(mlmodel, hyperparams)
     elif "feature_tweak" in method:
         return FeatureTweak(mlmodel, hyperparams)
-    elif "cent" in method:
-        min_entries_per_label = int(data_models.trainData.df.shape[0]*0.01)
-        MIN_ENTRIES_PER_LABEL_THRESH = 500
-        if min_entries_per_label<MIN_ENTRIES_PER_LABEL_THRESH:
-            print('min_entries_per_label is too small {}, setting it to {} '.format(min_entries_per_label,MIN_ENTRIES_PER_LABEL_THRESH))
-        #TODO: @MM Return this to 1% of data
-        min_entries_per_label = MIN_ENTRIES_PER_LABEL_THRESH
-        hpr = {"data_name": "data_name","n_search_samples": 300,
-                "p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
-                "treeWarmUp": 5,
-                "binary_cat_features": True,
-                "myvae_params": {
-                    'input_dim': len(mlmodel.feature_input_order),
-                    'kld_weight': 0.00025,
-                    'layers': layers,
-                    'latent_dim': latent_dim,
-                    'hidden_activation': 'relu',
-                    'dropout': 0.2,
-                    'batch_norm': True,
-                    'batch_size': 32,
-                    'epochs': 15,
-                    'learning_rate': 0.001,
-                    'weight_decay': 0.000001,
-                    'cuda': False,
-                    'verbose': True,
-                    'train': True,
-                    'save_dir': './vae_model/',
-                },
-                "tree_params": {
-                    "min_entries_per_label": min_entries_per_label,
-                    "grid_search_jobs": -1,
-                    "min_weight_gini": 100,
-                    "max_search" : 50,
-                    "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7],
-                                    "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
-                                    "max_features": ['sqrt',1.0, 'log2',0.8],
-                                    }
-                }
-          }
-        print_conf(hpr)
-        return CEnt(deepcopy(data_models.trainData), mlmodel, hpr, data_catalog= data_models.new_catalog_n)
     elif "cent_novae" in method:
         min_entries_per_label = int(data_models.trainData.df.shape[0]*0.01)
         MIN_ENTRIES_PER_LABEL_THRESH = 500
@@ -204,6 +163,47 @@ def intialialize_recourse_method(method, hyperparams, mlmodel, data_models):
           }
         print_conf(hpr)
         return CEntNoVAE(deepcopy(data_models.trainData), mlmodel, hpr, data_catalog= data_models.new_catalog_n)
+    elif "cent" in method:
+        min_entries_per_label = int(data_models.trainData.df.shape[0]*0.01)
+        MIN_ENTRIES_PER_LABEL_THRESH = 500
+        if min_entries_per_label<MIN_ENTRIES_PER_LABEL_THRESH:
+            print('min_entries_per_label is too small {}, setting it to {} '.format(min_entries_per_label,MIN_ENTRIES_PER_LABEL_THRESH))
+        #TODO: @MM Return this to 1% of data
+        min_entries_per_label = MIN_ENTRIES_PER_LABEL_THRESH
+        hpr = {"data_name": "data_name","n_search_samples": 300,
+                "p_norm": 1,"step": 0.1,"max_iter": 10,"clamp": True,
+                "treeWarmUp": 5,
+                "binary_cat_features": True,
+                "myvae_params": {
+                    'input_dim': len(mlmodel.feature_input_order),
+                    'kld_weight': 0.00025,
+                    'layers': layers,
+                    'latent_dim': latent_dim,
+                    'hidden_activation': 'relu',
+                    'dropout': 0.2,
+                    'batch_norm': True,
+                    'batch_size': 32,
+                    'epochs': 15,
+                    'learning_rate': 0.001,
+                    'weight_decay': 0.000001,
+                    'cuda': False,
+                    'verbose': True,
+                    'train': True,
+                    'save_dir': './vae_model/',
+                },
+                "tree_params": {
+                    "min_entries_per_label": min_entries_per_label,
+                    "grid_search_jobs": -1,
+                    "min_weight_gini": 100,
+                    "max_search" : 50,
+                    "grid_search": {"cv": 1,"splitter": ["best"],"criterion": ["gini"],"max_depth": [3,4,5,6,7],
+                                    "min_samples_split": [1.0,2,3],"min_samples_leaf": [1,2,3],
+                                    "max_features": ['sqrt',1.0, 'log2',0.8],
+                                    }
+                }
+          }
+        print_conf(hpr)
+        return CEnt(deepcopy(data_models.trainData), mlmodel, hpr, data_catalog= data_models.new_catalog_n)
     else:
         raise ValueError("Recourse method not known  {}".format(method))
 
