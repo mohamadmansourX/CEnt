@@ -225,7 +225,6 @@ class CEntNoVAE(RecourseMethod):
         # Get the encoded features
         # encoded_values = self.vae.get_encodings(input_data)
         # get encoded values without VAE
-        print("Getting Encodings WITHOUT VAE....")
         encoded_values = input_data.values
         encoded_values = [i for i in encoded_values]
         return encoded_values
