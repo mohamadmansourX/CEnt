@@ -31,7 +31,7 @@ class MyData:
     self.immutables = immutables
 
 class DataModels:
-  def __init__(self, data_name, factuals_length = 50, out_dir = ''):
+  def __init__(self, data_name, factuals_length = 50, out_dir = 'outputs/tmp/'):
     logging_file = os.path.join(out_dir, 'models_logs.txt')
     self.models_metrics_file = os.path.join(out_dir, 'model_zoo_metrics.csv')
     self.data_name = data_name
@@ -39,8 +39,6 @@ class DataModels:
     self.load_data_modesl(data_name=self.data_name, factuals_length = factuals_length)
     # Load models
     self.load_models(logging_file = logging_file)
-    # load the factuals such that each two frameworks of the same model_type have the same factuals
-    # (verify the same factuals)
 
     self.factuals = {}
     for model_type in self.models_zoo:

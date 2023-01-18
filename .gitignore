@@ -4,3 +4,6 @@ __pycache__/
 data/
 carla_recourse.egg-info/
 .pytest_cache/
+saved_models/
+vae_model/
+outputs/

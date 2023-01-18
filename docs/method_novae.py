@@ -1,6 +1,5 @@
 from tqdm.notebook import tqdm
 from pynndescent import NNDescent
-import enum
 from typing import Dict, List, Tuple, Union
 import pandas as pd
 from carla import RecourseMethod
@@ -9,22 +8,13 @@ from carla.models.api import MLModel
 from cent.vae import VariationalAutoencoder
 from carla.recourse_methods.processing import merge_default_parameters
 from cent.TreeLeaf import TreeLeafs
-# For Descision Tree implementation
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import tree
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-import torch
 import numpy as np
-from carla import Benchmark
-from carla.recourse_methods import Dice, Face
 import numpy as np
-import random
 from sklearn.model_selection import train_test_split
-from copy import deepcopy
-from carla import MLModelCatalog
-from carla.data.catalog import OnlineCatalog
-from carla.recourse_methods import GrowingSpheres
 from sklearn.model_selection import GridSearchCV, train_test_split
 tqdm.pandas()
 
@@ -274,8 +264,6 @@ class CEntNoVAE(RecourseMethod):
         This method is responsible to get the counterfactual of a given targeted_encoding
         '''
         copy_data = self.dataset.copy()
-        #index_neighbors_0 = self.nnd.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"]*2.5)[0][0].tolist()
-        #datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
         index_neighbors_0 = self.nnd_negative.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
         datata_index_0 = self.data_indexes_m[index_neighbors_0].tolist()
         index_neighbors_1 = self.nnd_positive.query(np.array([factual["VAE_ENCODED"].tolist()]), k=self.hyperparams["tree_params"]["min_entries_per_label"])[0][0].tolist()
@@ -288,7 +276,6 @@ class CEntNoVAE(RecourseMethod):
         # Get the leaf nodes
         leaf_nodes = TreeLeafs(tree.tree_, self.feature_input_order).leafs_nodes.copy()
         # leaf_nodes is list of classes LeafNode
-        # Get the leaf node where the targeted encoding is located
         leaf_node_n_i = -1
         for leaf_i in range(len(leaf_nodes)):
             if leaf_nodes[leaf_i].check_point(factual):
@@ -319,22 +306,14 @@ class CEntNoVAE(RecourseMethod):
         #print("Searching for Neighbor....")
         if len(leaf_nodes_with_label) == 1:
             max_searchs = [self.hyperparams["tree_params"]["max_search"]]
-            #print("Distance to nearest leaf node: {}".format(leaf_node_n.compare_node(leaf_nodes_with_label[0])[1]))
         elif len(leaf_nodes_with_label) == 2:
             max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.8, self.hyperparams["tree_params"]["max_search"]*0.2]
-            #print("Distance to nearest leaf node: {} then {}".format(leaf_node_n.compare_node(leaf_nodes_with_label[0])[1], 
-            #                                                         leaf_node_n.compare_node(leaf_nodes_with_label[1])[1]))
         else:
             if leaf_node_n.compare_node(leaf_nodes_with_label[2])[1] - leaf_node_n.compare_node(leaf_nodes_with_label[0])[1] < 2:
                 max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.6, self.hyperparams["tree_params"]["max_search"]*0.2,
                                self.hyperparams["tree_params"]["max_search"]*0.2]
-                #print("Distance to nearest leaf node: {} then {} then {}".format(leaf_node_n.compare_node(leaf_nodes_with_label[0])[1], 
-                #                                                        leaf_node_n.compare_node(leaf_nodes_with_label[1])[1], 
-                #                                                        leaf_node_n.compare_node(leaf_nodes_with_label[2])[1]))
             else:
                 max_searchs = [self.hyperparams["tree_params"]["max_search"]*0.8, self.hyperparams["tree_params"]["max_search"]*0.2]
-                #print("Distance to nearest leaf node: {} then {}".format(leaf_node_n.compare_node(leaf_nodes_with_label[0])[1], 
-                #                                                        leaf_node_n.compare_node(leaf_nodes_with_label[1])[1]))
 
         # map max_search to int values while rounding up to the nearest int
         max_searchs = [int(round(x)) for x in max_searchs]
@@ -343,7 +322,6 @@ class CEntNoVAE(RecourseMethod):
         for rank_node, max_search_i in enumerate(max_searchs):
             number_searchs = 0
             nearest_leaf_node = leaf_nodes_with_label[rank_node]
-            #print("Searching for Neighbor.... {}, {}".format(rank_node, max_search_i))
             while number_searchs < max_search_i and returned_neighbor is -1:
                 if number_searchs < max_search_i*0.2:
                     sigma = 20
