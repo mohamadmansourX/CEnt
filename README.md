@@ -216,7 +216,6 @@ misc{https://doi.org/10.48550/arxiv.2301.07941,
   publisher = {arXiv},
   year = {2023},
   doi = {10.48550/ARXIV.2301.07941},
-  url = {https://arxiv.org/abs/2301.07941},
-  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
+  url = {https://arxiv.org/abs/2301.07941}
 }
 ```
