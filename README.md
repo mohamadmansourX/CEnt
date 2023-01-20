@@ -2,8 +2,7 @@
 
 # CEnt: An Entropy-based Model-agnostic Explainability Framework to Contrast Classifiers’ Decisions
 
-Official Implementation of CEnt.
->based on the [CARLA Framework](https://github.com/carla-recourse/CARLA)
+Official Implementation of our CEnt [paper](https://arxiv.org/abs/2301.07941).
 
 </div>
 
@@ -14,6 +13,8 @@ Official Implementation of CEnt.
 ## Abstract
 
 >  Introducing CEnt - a powerful and innovative entropy-based method for interpreting machine learning models and understanding the decision-making process behind them. CEnt provides actionable alternatives for individuals facing an unfavorable outcome by generating feasible feature tweaks that can alter the model's decision. Our approach takes into account immutability and semi-immutability constraints, employs local sampling on manifold-like distances computed by VAEs, and generates counterfactuals that achieve better proximity rates without compromising latency, feasibility, and attainability. It is a powerful tool for understanding and improving decision-making systems, can even be used to detect vulnerabilities in textual classifiers and shows high potential for image classifiers.
+
+>based on [CARLA Framework](https://github.com/carla-recourse/CARLA)
 
 ## Installation
 
@@ -200,7 +201,7 @@ outputs/
 
 # Bugs or questions
 
-If you have any questions related to the paper or the theoretical background, please contact the authors via email: Mohamad Mansour (moemansour03@gmail.com) or Julia El Zini (https://github.com/Julia-z)
+If you have any questions related to the paper or the theoretical background, please contact the authors via email: Julia El Zini (jwe04@mail.aub.edu) or Mohamad Mansour (mgm35@mail.aub.edu)
 
 If you have any questions related to the code, please open an issue on the github repository.
 
@@ -208,5 +209,14 @@ If you have any questions related to the code, please open an issue on the githu
 
 Please cite our paper if you use this code in your own work:
 
-```bibtex
+```
+misc{https://doi.org/10.48550/arxiv.2301.07941,
+  author = {Zini, Julia El and Mansour, Mohammad and Awad, Mariette},
+  title = {CEnt: An Entropy-based Model-agnostic Explainability Framework to Contrast Classifiers' Decisions},
+  publisher = {arXiv},
+  year = {2023},
+  doi = {10.48550/ARXIV.2301.07941},
+  url = {https://arxiv.org/abs/2301.07941},
+  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
+}
 ```
